@@ -1,0 +1,4888 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>ML2 Ramal 2 — Dashboard EQ16-17</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
+:root {
+  --bg:#0a0e1a; --bg2:#0f1628; --bg3:#151e35; --panel:#111827;
+  --border:#1e3a5f; --accent:#00b4d8; --accent2:#0077b6;
+  --green:#06d6a0; --yellow:#ffd166; --red:#ef476f; --orange:#f4a261;
+  --white:#e8f4fd; --gray:#4a6080; --tacto:1.120;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--white);height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+
+/* HEADER */
+.header{display:flex;align-items:center;justify-content:space-between;padding:8px 20px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;}
+.logo{font-size:20px;font-weight:700;letter-spacing:3px;color:var(--accent);}
+.logo span{color:var(--white);}
+.subtitle{font-size:10px;color:var(--gray);letter-spacing:2px;}
+.header-stats{display:flex;gap:20px;}
+.stat-box{text-align:center;}
+.stat-val{font-family:'Share Tech Mono';font-size:16px;color:var(--accent);}
+.stat-lbl{font-size:9px;color:var(--gray);letter-spacing:1px;}
+
+/* VISTAS */
+.view{display:none;flex:1;overflow:hidden;}
+.view.active{display:flex;}
+
+/* ── VISTA PLANTA ── */
+#view-plant{flex-direction:row;}
+.plant-wrap{flex:1;position:relative;overflow-x:auto;overflow-y:hidden;background:radial-gradient(ellipse at center,var(--plant-bg1) 0%,var(--plant-bg2) 100%);}
+.plant-svg{width:6200px;height:100%;min-height:580px;}
+.plant-zoom-bar{position:absolute;bottom:12px;right:16px;display:flex;gap:6px;z-index:10;}
+.plant-zoom-btn{width:32px;height:32px;background:rgba(0,180,216,0.15);border:1px solid var(--accent);border-radius:4px;color:var(--accent);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.plant-zoom-btn:hover{background:rgba(0,180,216,0.3);}
+
+/* ── VISTA CARGA ── */
+#view-carga{flex-direction:column;background:var(--bg);}
+.carga-view-header{display:flex;align-items:center;gap:12px;padding:12px 20px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;}
+.back-btn{padding:7px 16px;border-radius:6px;border:2px solid var(--yellow);background:rgba(255,209,102,0.12);color:var(--yellow);font-family:'Rajdhani';font-size:13px;font-weight:700;cursor:pointer;letter-spacing:2px;transition:all .2s;display:flex;align-items:center;gap:6px;}
+.back-btn:hover{background:rgba(255,209,102,0.25);}
+.carga-view-title{font-size:18px;font-weight:700;color:var(--accent);letter-spacing:2px;}
+.carga-view-sub{font-size:11px;color:var(--gray);}
+.carga-view-body{display:flex;flex:1;overflow:hidden;gap:0;}
+
+/* Modelos panel */
+.modelos-panel{width:220px;background:var(--panel);border-right:1px solid var(--border);padding:14px;overflow-y:auto;flex-shrink:0;}
+.modelos-panel::-webkit-scrollbar{width:3px;}
+.modelos-panel::-webkit-scrollbar-thumb{background:var(--border);}
+.section-title{font-size:9px;color:var(--gray);letter-spacing:2px;margin-bottom:8px;}
+.modelo-card{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px;}
+.modelo-name{font-size:10px;color:var(--gray);letter-spacing:1px;margin-bottom:4px;}
+.modelo-time{font-family:'Share Tech Mono';font-size:18px;}
+.modelo-sat{font-size:10px;margin-top:2px;}
+.sat-bar{height:5px;background:var(--bg);border-radius:3px;margin-top:5px;overflow:hidden;}
+.sat-fill{height:100%;border-radius:3px;transition:width .5s;}
+
+/* Ops table */
+.ops-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.ops-table-wrap{flex:1;overflow:auto;}
+.ops-table-wrap::-webkit-scrollbar{width:4px;height:4px;}
+.ops-table-wrap::-webkit-scrollbar-thumb{background:var(--border);}
+table{width:100%;border-collapse:collapse;font-size:11px;}
+thead tr{background:var(--bg2);position:sticky;top:0;z-index:2;}
+th{padding:8px 10px;text-align:left;font-size:10px;color:var(--gray);letter-spacing:1px;border-bottom:1px solid var(--border);white-space:nowrap;}
+th.time-col{text-align:right;min-width:70px;}
+td{padding:7px 10px;border-bottom:1px solid rgba(30,58,95,0.3);vertical-align:middle;}
+td.pr-cell{font-family:'Share Tech Mono';font-size:10px;color:var(--accent);white-space:nowrap;}
+td.desc-cell{font-size:11px;max-width:300px;}
+td.time-cell{font-family:'Share Tech Mono';font-size:11px;text-align:right;white-space:nowrap;}
+td.time-cell.has-val{color:var(--green);}
+td.time-cell.no-val{color:rgba(74,96,128,0.4);}
+tr.op-row{cursor:pointer;transition:background .15s;}
+tr.op-row:hover{background:rgba(0,180,216,0.06);}
+tr.op-row:active{background:rgba(0,180,216,0.12);}
+
+/* hint doble clic */
+.ops-hint{padding:6px 16px;font-size:10px;color:var(--gray);letter-spacing:1px;border-top:1px solid var(--border);text-align:center;flex-shrink:0;}
+
+/* ── MODAL ENVIAR ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:100;justify-content:center;align-items:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--panel);border:1px solid var(--accent);border-radius:10px;padding:24px;width:420px;max-height:80vh;overflow-y:auto;}
+.modal h3{font-size:16px;color:var(--accent);margin-bottom:4px;letter-spacing:1px;}
+.modal-op-info{background:var(--bg3);border-radius:6px;padding:10px 14px;margin:12px 0;}
+.modal-op-pr{font-family:'Share Tech Mono';font-size:12px;color:var(--accent);}
+.modal-op-desc{font-size:12px;color:var(--white);margin-top:4px;}
+.modal-op-times{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+.modal-op-time-tag{font-family:'Share Tech Mono';font-size:10px;padding:2px 8px;border-radius:3px;background:var(--bg2);}
+.modal-label{font-size:10px;color:var(--gray);letter-spacing:1px;margin-bottom:6px;margin-top:12px;}
+.carga-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:220px;overflow-y:auto;}
+.carga-grid::-webkit-scrollbar{width:3px;}
+.carga-grid::-webkit-scrollbar-thumb{background:var(--border);}
+.carga-opt{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 10px;cursor:pointer;transition:all .2s;}
+.carga-opt:hover{border-color:var(--accent);background:rgba(0,180,216,0.08);}
+.carga-opt.selected{border-color:var(--accent);background:rgba(0,180,216,0.15);}
+.carga-opt-num{font-family:'Share Tech Mono';font-size:11px;color:var(--accent);}
+.carga-opt-name{font-size:10px;color:var(--gray);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.carga-opt-sat{font-size:9px;margin-top:3px;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
+.btn{padding:7px 16px;border-radius:4px;border:1px solid var(--border);background:var(--bg3);color:var(--white);font-family:'Rajdhani';font-size:12px;font-weight:600;cursor:pointer;letter-spacing:1px;transition:all .2s;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn-primary{background:var(--accent2);border-color:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent);}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--green);color:#000;padding:10px 20px;border-radius:6px;font-weight:700;font-size:13px;transition:transform .3s;z-index:200;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+
+/* EXCEL LOADER */
+.excel-loader{position:fixed;bottom:16px;left:16px;z-index:50;}
+.excel-btn{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--gray);font-family:'Rajdhani';font-size:11px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all .2s;}
+.excel-btn:hover{border-color:var(--accent);color:var(--accent);}
+#excel-file-input{display:none;}
+.drop-overlay{display:none;position:fixed;inset:0;background:rgba(0,180,216,0.06);border:3px dashed var(--accent);z-index:300;justify-content:center;align-items:center;flex-direction:column;gap:12px;}
+.drop-overlay.active{display:flex;}
+.drop-icon{font-size:48px;}
+.drop-txt{font-size:20px;font-weight:700;color:var(--accent);letter-spacing:3px;}
+.drop-sub{font-size:12px;color:var(--gray);letter-spacing:2px;}
+.loader-overlay{display:none;position:fixed;inset:0;background:rgba(5,10,20,0.85);z-index:400;justify-content:center;align-items:center;flex-direction:column;gap:16px;}
+.loader-overlay.active{display:flex;}
+.spinner{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loader-txt{font-size:14px;color:var(--accent);letter-spacing:3px;}
+.loader-sub{font-size:11px;color:var(--gray);}
+
+/* Carga badge colores planta */
+.badge-bg{transition:all .2s;}
+.carga-badge{cursor:pointer;}
+.carga-badge:hover .badge-bg{filter:brightness(1.4);}
+
+/* Colors modelos */
+.col-Formentor{color:#60b4e8;} .col-CUPRA{color:#7ecfff;} .col-SEAT{color:#a8d8f0;}
+.col-MHEV{color:#ffd166;} .col-PHEV{color:#f4b8c8;} .col-Gas{color:#f4a261;}
+.col-Die{color:#90c8e8;} .col-GD{color:#c4a8e8;} .col-VZ5{color:#ffb3c6;}
+
+/* ── CONFIG PANEL ── */
+.config-btn {
+  padding: 6px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--gray);
+  font-family: 'Rajdhani';
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all .2s;
+  margin-left: 16px;
+}
+.config-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.config-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 150;
+  justify-content: center;
+  align-items: center;
+}
+.config-modal.open { display: flex; }
+.config-box {
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 24px;
+  width: 380px;
+}
+.config-box h3 { font-size:15px; color:var(--accent); letter-spacing:2px; margin-bottom:18px; }
+.config-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(30,58,95,0.4);
+}
+.config-row:last-of-type { border-bottom: none; }
+.config-lbl { font-size: 12px; color: var(--gray); letter-spacing: 1px; }
+.config-lbl span { display:block; font-size:9px; color:rgba(74,96,128,0.6); margin-top:2px; }
+.config-input {
+  width: 110px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--white);
+  font-family: 'Share Tech Mono';
+  font-size: 14px;
+  padding: 6px 10px;
+  text-align: right;
+  transition: border-color .2s;
+}
+.config-input:focus { outline: none; border-color: var(--accent); }
+.config-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:18px; }
+
+/* Stat boxes clickables */
+.stat-box { cursor: pointer; transition: opacity .2s; }
+.stat-box:hover { opacity: 0.8; }
+.stat-box.editable { position: relative; }
+.stat-box.editable::after {
+  content: '✎';
+  position: absolute;
+  top: -2px; right: -8px;
+  font-size: 8px;
+  color: var(--border);
+}
+
+
+/* Selección múltiple ops */
+tr.op-row.selected-op { background: rgba(0,180,216,0.20) !important; outline: 2px solid var(--accent); outline-offset: -2px; }
+tr.op-row.selected-op td { color: var(--accent) !important; font-weight: 600; }
+tr.op-row.selected-op td.pr-cell { color: var(--yellow) !important; font-weight: 700; }
+/* Tema claro — selección más visible */
+body.theme-light tr.op-row.selected-op { background: #c5d8f0 !important; outline: 2px solid #0055aa; }
+body.theme-light tr.op-row.selected-op td { color: #000000 !important; font-weight: 600; }
+body.theme-light tr.op-row.selected-op td.pr-cell { color: #0055aa !important; font-weight: 700; }
+.ops-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.ops-selected-count {
+  font-family: 'Share Tech Mono';
+  font-size: 11px;
+  color: var(--yellow);
+  letter-spacing: 1px;
+}
+.btn-send-sel {
+  padding: 5px 14px;
+  border-radius: 4px;
+  border: 1px solid var(--accent);
+  background: var(--accent2);
+  color: #fff;
+  font-family: 'Rajdhani';
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all .2s;
+  display: none;
+}
+.btn-send-sel.visible { display: inline-block; }
+.btn-send-sel:hover { background: var(--accent); }
+.btn-clear-sel {
+  padding: 5px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--gray);
+  font-family: 'Rajdhani';
+  font-size: 11px;
+  cursor: pointer;
+  margin-left: 6px;
+  display: none;
+}
+.btn-clear-sel.visible { display: inline-block; }
+
+
+/* Editor de tiempos por modelo */
+.times-editor { margin: 10px 0; }
+.time-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(30,58,95,0.3);
+}
+.time-edit-col {
+  font-size: 11px;
+  font-weight: 600;
+  width: 110px;
+  flex-shrink: 0;
+}
+.time-edit-input {
+  width: 90px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--white);
+  font-family: 'Share Tech Mono';
+  font-size: 13px;
+  padding: 4px 8px;
+  text-align: right;
+  transition: border-color .2s;
+}
+.time-edit-input:focus { outline: none; border-color: var(--accent); }
+.time-edit-input.empty { color: var(--gray); }
+.btn-clear-time {
+  padding: 3px 8px;
+  background: transparent;
+  border: 1px solid rgba(239,71,111,0.4);
+  border-radius: 3px;
+  color: var(--red);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.btn-clear-time:hover { background: rgba(239,71,111,0.1); }
+.time-edit-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+.time-edit-add select {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--white);
+  font-family: 'Rajdhani';
+  font-size: 12px;
+  padding: 4px 8px;
+}
+.time-edit-add select:focus { outline: none; border-color: var(--accent); }
+.btn-add-time {
+  padding: 4px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--accent);
+  font-family: 'Rajdhani';
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+}
+.btn-add-time:hover { background: rgba(0,180,216,0.1); }
+
+
+/* Cambiar ubicación */
+.ubicacion-editor {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+.ubicacion-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.ubicacion-select {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--white);
+  font-family: 'Rajdhani';
+  font-size: 12px;
+  padding: 6px 8px;
+  transition: border-color .2s;
+}
+.ubicacion-select:focus { outline: none; border-color: var(--accent); }
+.btn-ubicacion {
+  padding: 6px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--accent2);
+  border-radius: 4px;
+  color: var(--accent);
+  font-family: 'Rajdhani';
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.btn-ubicacion:hover { background: rgba(0,119,182,0.2); }
+.ubicacion-current {
+  font-family: 'Share Tech Mono';
+  font-size: 11px;
+  color: var(--accent);
+  background: var(--bg2);
+  padding: 4px 10px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+}
+
+
+/* Editor tiempos drag & drop */
+.times-editor { margin: 8px 0; }
+.time-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  border-bottom: 1px solid rgba(30,58,95,0.3);
+  cursor: grab;
+  border-radius: 4px;
+  transition: background .15s;
+  user-select: none;
+}
+.time-edit-row:hover { background: rgba(0,180,216,0.05); }
+.time-edit-row.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+.time-edit-row.drag-over {
+  background: rgba(0,180,216,0.12);
+  border-top: 2px solid var(--accent);
+}
+.drag-handle {
+  color: var(--gray);
+  font-size: 12px;
+  cursor: grab;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+.time-edit-col {
+  font-size: 11px;
+  font-weight: 600;
+  width: 100px;
+  flex-shrink: 0;
+}
+.time-edit-input {
+  width: 85px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--white);
+  font-family: 'Share Tech Mono';
+  font-size: 13px;
+  padding: 4px 8px;
+  text-align: right;
+  transition: border-color .2s;
+  flex-shrink: 0;
+}
+.time-edit-input:focus { outline: none; border-color: var(--accent); }
+.time-edit-input.empty { color: var(--gray); font-style: italic; }
+.btn-clear-time {
+  padding: 3px 8px;
+  background: transparent;
+  border: 1px solid rgba(239,71,111,0.4);
+  border-radius: 3px;
+  color: var(--red);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all .2s;
+  flex-shrink: 0;
+}
+.btn-clear-time:hover { background: rgba(239,71,111,0.15); border-color: var(--red); }
+.time-edit-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+.time-edit-add select {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--white);
+  font-family: 'Rajdhani';
+  font-size: 12px;
+  padding: 5px 8px;
+}
+.time-edit-add select:focus { outline: none; border-color: var(--accent); }
+.btn-add-time {
+  padding: 5px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--accent);
+  font-family: 'Rajdhani';
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .2s;
+}
+.btn-add-time:hover { background: rgba(0,180,216,0.1); }
+.new-col-val {
+  width: 80px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--white);
+  font-family: 'Share Tech Mono';
+  font-size: 12px;
+  padding: 5px 8px;
+  text-align: right;
+}
+.new-col-val:focus { outline: none; border-color: var(--accent); }
+
+
+/* Edición inline de tiempo */
+.time-cell.editing {
+  padding: 0 !important;
+}
+.time-inline-input {
+  width: 60px;
+  max-width: 100%;
+  background: rgba(0,180,216,0.15);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  color: var(--white);
+  font-family: 'Share Tech Mono';
+  font-size: 11px;
+  padding: 2px 4px;
+  text-align: right;
+  outline: none;
+  box-sizing: border-box;
+}
+
+
+th.draggable-col { transition: border .1s; }
+th.draggable-col:hover { background: rgba(0,180,216,0.05); }
+
+
+/* Editor de columnas */
+.btn-edit-cols {
+  padding: 5px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--gray);
+  font-family: 'Rajdhani';
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all .2s;
+  margin-left: 8px;
+}
+.btn-edit-cols:hover { border-color: var(--yellow); color: var(--yellow); }
+
+.modal-cols {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 150;
+  justify-content: center;
+  align-items: center;
+}
+.modal-cols.open { display: flex; }
+.modal-cols-box {
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 22px;
+  width: 420px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.modal-cols-box h3 { font-size:15px; color:var(--accent); letter-spacing:1px; margin-bottom:14px; }
+.col-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(30,58,95,0.3);
+}
+.col-edit-input {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--white);
+  font-family: 'Rajdhani';
+  font-size: 13px;
+  font-weight: 600;
+  padding: 5px 8px;
+  transition: border-color .2s;
+}
+.col-edit-input:focus { outline: none; border-color: var(--accent); }
+.btn-del-col {
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid rgba(239,71,111,0.4);
+  border-radius: 3px;
+  color: var(--red);
+  font-size: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all .2s;
+}
+.btn-del-col:hover { background: rgba(239,71,111,0.1); }
+.col-add-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+.col-add-input {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--white);
+  font-family: 'Rajdhani';
+  font-size: 13px;
+  padding: 6px 8px;
+}
+.col-add-input:focus { outline: none; border-color: var(--accent); }
+.btn-add-col {
+  padding: 6px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--accent);
+  font-family: 'Rajdhani';
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .2s;
+}
+.btn-add-col:hover { background: rgba(0,180,216,0.1); }
+
+
+/* Mix de modelos */
+.modelo-mix-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.mix-label { font-size:9px; color:var(--gray); letter-spacing:1px; }
+.mix-input {
+  width: 44px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--accent);
+  font-family: 'Share Tech Mono';
+  font-size: 12px;
+  padding: 2px 6px;
+  text-align: center;
+  transition: border-color .2s;
+}
+.mix-input:focus { outline: none; border-color: var(--accent); }
+.mix-media {
+  font-size: 10px;
+  color: var(--green);
+  letter-spacing: 1px;
+}
+.mix-result-bar {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: 10px;
+}
+.mix-result-title { font-size:9px; color:var(--gray); letter-spacing:2px; margin-bottom:6px; }
+.mix-result-val {
+  font-family: 'Share Tech Mono';
+  font-size: 20px;
+  color: var(--yellow);
+}
+.mix-result-sat { font-size:10px; margin-top:2px; }
+
+
+.mix-freq-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+.mix-freq-input {
+  width: 38px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--accent);
+  font-family: 'Share Tech Mono';
+  font-size: 12px;
+  padding: 2px 4px;
+  text-align: center;
+}
+.mix-freq-input:focus { outline: none; border-color: var(--accent); }
+.mix-freq-sep {
+  font-family: 'Share Tech Mono';
+  font-size: 13px;
+  color: var(--gray);
+}
+.mix-freq-label {
+  font-size: 9px;
+  color: var(--gray);
+  letter-spacing: 1px;
+}
+
+
+.plant-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  display: flex;
+  gap: 0;
+}
+.plant-nav-left  { left: 8px; }
+.plant-nav-right { right: 8px; }
+.plant-nav-btn {
+  width: 36px;
+  height: 48px;
+  background: rgba(0,10,25,0.75);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--accent);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .2s;
+}
+.plant-nav-btn:hover { background: rgba(0,180,216,0.2); }
+
+
+/* ── TEMAS ── */
+body.theme-dark {
+  --bg: #050a12; --bg2: #0a1628; --bg3: #0d1f3a;
+  --panel: #0a1628; --border: #1e3a5f; --accent: #00b4d8;
+  --yellow: #ffd166; --green: #06d6a0; --red: #ef476f;
+  --white: #e0f0ff; --gray: #4a6080;
+  --plant-bg1: #0d1929; --plant-bg2: #050a12;
+}
+body.theme-light {
+  --bg: #f0f4f8; --bg2: #ffffff; --bg3: #e2eaf2;
+  --panel: #ffffff; --border: #b0c4d8; --accent: #0077a8;
+  --yellow: #c97000; --green: #007a5a; --red: #c0002a;
+  --white: #1a2a3a; --gray: #6a7f94;
+  --plant-bg1: #dce8f5; --plant-bg2: #f0f4f8;
+}
+body.theme-grey {
+  --bg: #1a1a2e; --bg2: #16213e; --bg3: #0f3460;
+  --panel: #16213e; --border: #0f3460; --accent: #e94560;
+  --yellow: #f5a623; --green: #4caf50; --red: #e94560;
+  --white: #eaeaea; --gray: #8892a4;
+  --plant-bg1: #0f1a30; --plant-bg2: #0d0d1a;
+}
+body.theme-green {
+  --bg: #0a1a0f; --bg2: #0f2517; --bg3: #163520;
+  --panel: #0f2517; --border: #1e4a2a; --accent: #2ecc71;
+  --yellow: #f1c40f; --green: #2ecc71; --red: #e74c3c;
+  --white: #d5f5e3; --gray: #4a7a5a;
+  --plant-bg1: #0a1a10; --plant-bg2: #050f07;
+}
+body.theme-midnight {
+  --bg: #0d0d1a; --bg2: #13132a; --bg3: #1a1a3a;
+  --panel: #13132a; --border: #2a2a5a; --accent: #7c4dff;
+  --yellow: #ffd740; --green: #69f0ae; --red: #ff5252;
+  --white: #e8e8ff; --gray: #5a5a8a;
+  --plant-bg1: #0d0d25; --plant-bg2: #050510;
+}
+
+/* Botones de tema */
+.theme-bar {
+  display: flex;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+}
+.theme-bar-label {
+  font-size: 9px;
+  color: var(--gray);
+  letter-spacing: 2px;
+  margin-right: 4px;
+}
+.theme-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all .2s;
+  position: relative;
+}
+.theme-btn:hover, .theme-btn.active { border-color: var(--white); transform: scale(1.2); }
+.theme-btn.active::after {
+  content: '✓';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: white;
+}
+
+
+/* Operaciones pendientes de confirmar */
+.op-pending {
+  background: rgba(239,71,111,0.12) !important;
+  border-left: 3px solid var(--red) !important;
+}
+.op-pending td {
+  color: var(--red) !important;
+  font-weight: 700 !important;
+}
+.op-pending-badge {
+  display: inline-block;
+  background: var(--red);
+  color: white;
+  font-size: 8px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: 4px;
+  letter-spacing: 1px;
+  vertical-align: middle;
+}
+.pending-bar {
+  background: rgba(239,71,111,0.1);
+  border: 1px solid rgba(239,71,111,0.4);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.pending-bar-label {
+  font-size: 10px;
+  color: var(--red);
+  letter-spacing: 1px;
+  font-weight: 700;
+  flex: 1;
+}
+.btn-confirm-changes {
+  padding: 5px 12px;
+  background: var(--green);
+  border: none;
+  border-radius: 4px;
+  color: #050a12;
+  font-family: 'Rajdhani';
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+.btn-undo-changes {
+  padding: 5px 12px;
+  background: transparent;
+  border: 1px solid var(--red);
+  border-radius: 4px;
+  color: var(--red);
+  font-family: 'Rajdhani';
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+
+
+.modal-new-carga {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 150;
+  justify-content: center;
+  align-items: center;
+}
+.modal-new-carga.open { display: flex; }
+.modal-new-carga-box {
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 22px;
+  width: 380px;
+}
+.modal-new-carga-box h3 { font-size:14px; color:var(--accent); letter-spacing:1px; margin-bottom:14px; }
+.new-carga-field { margin-bottom: 12px; }
+.new-carga-label { font-size:9px; color:var(--gray); letter-spacing:2px; margin-bottom:4px; display:block; }
+.new-carga-input {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--white);
+  font-family: 'Rajdhani';
+  font-size: 13px;
+  padding: 6px 10px;
+  box-sizing: border-box;
+}
+.new-carga-input:focus { outline: none; border-color: var(--accent); }
+
+
+.eq-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.eq-tab {
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg3);
+  color: var(--gray);
+  font-family: 'Rajdhani';
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all .2s;
+}
+.eq-tab:hover { border-color: var(--accent); color: var(--accent); }
+.eq-tab.active { border-color: var(--accent); background: rgba(0,180,216,0.15); color: var(--accent); }
+
+
+.nombre-field {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.nombre-field label {
+  font-size: 9px;
+  color: var(--gray);
+  letter-spacing: 2px;
+  display: block;
+  margin-bottom: 5px;
+}
+.nombre-input {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--white);
+  font-family: 'Rajdhani';
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 10px;
+  box-sizing: border-box;
+  transition: border-color .2s;
+}
+.nombre-input:focus { outline: none; border-color: var(--accent); }
+
+
+.pdf-drop-zone {
+  border: 2px dashed var(--accent);
+  border-radius: 6px;
+  padding: 6px 12px;
+  color: var(--accent);
+  font-family: 'Rajdhani';
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all .2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+.pdf-drop-zone:hover, .pdf-drop-zone.drag-over {
+  background: rgba(0,180,216,0.1);
+  border-color: var(--yellow);
+  color: var(--yellow);
+}
+.pdf-drop-zone input[type=file] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.server-status {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #333;
+  flex-shrink: 0;
+}
+.server-status.online  { background: var(--green); }
+.server-status.offline { background: var(--red); }
+
+
+.modal-new-op {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 150;
+  justify-content: center;
+  align-items: center;
+}
+.modal-new-op.open { display: flex; }
+.modal-new-op-box {
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 22px;
+  width: 400px;
+}
+.modal-new-op-box h3 { font-size:14px; color:var(--accent); letter-spacing:1px; margin-bottom:14px; }
+
+
+.op-row { cursor: grab; }
+.op-row.dragging { opacity: 0.4; cursor: grabbing; }
+.op-row.drag-over-top { border-top: 2px solid var(--accent) !important; }
+.op-row.drag-over-bot { border-bottom: 2px solid var(--accent) !important; }
+.drag-handle {
+  color: var(--gray);
+  font-size: 12px;
+  cursor: grab;
+  padding: 0 4px;
+  opacity: 0.4;
+  user-select: none;
+}
+.op-row:hover .drag-handle { opacity: 1; }
+
+
+/* ── TEMA CLARO — OVERRIDES ── */
+body.theme-light { color: #111111; }
+body.theme-light .header { background:#ffffff; border-bottom:1px solid #cccccc; }
+body.theme-light .header-title { color:#000000; font-weight:900; }
+body.theme-light .header-sub   { color:#333333; }
+body.theme-light .stat-val     { color:#000000; font-weight:700; }
+body.theme-light .stat-lbl     { color:#444444; }
+body.theme-light .theme-bar    { background:#f0f0f0; border-color:#cccccc; }
+body.theme-light .theme-bar-label { color:#333333; }
+
+body.theme-light .carga-view-header { background:#f0f0f0; border-bottom:1px solid #cccccc; }
+body.theme-light .cv-title  { color:#000000; font-weight:800; }
+body.theme-light .cv-sub    { color:#333333; }
+
+body.theme-light table th   { background:#222222; color:#ffffff; }
+body.theme-light table td   { color:#000000 !important; background:#ffffff; }
+body.theme-light table tr:nth-child(even) td { background:#f5f5f5; }
+body.theme-light .op-row:hover td  { background:#e8e8e8 !important; }
+body.theme-light .op-row.selected td { background:#d0d0d0 !important; color:#000000 !important; }
+body.theme-light .pr-cell   { color:#000000 !important; font-weight:600; }
+body.theme-light .desc-cell { color:#000000 !important; }
+body.theme-light .time-cell { color:#000000 !important; }
+body.theme-light .time-cell.has-val { color:#000000 !important; }
+body.theme-light .time-cell.no-val  { color:#aaaaaa !important; }
+body.theme-light .drag-handle { color:#888888; }
+
+body.theme-light .modelos-panel { background:#f0f0f0; border-color:#cccccc; }
+body.theme-light .modelo-card   { background:#ffffff; border-color:#cccccc; }
+body.theme-light .modelo-name   { color:#000000 !important; font-weight:700; }
+body.theme-light .modelo-time   { color:#000000 !important; font-weight:600; }
+body.theme-light .modelo-sat    { color:#000000 !important; }
+body.theme-light .sat-fill      { opacity:0.7; }
+body.theme-light .mix-result-title { color:#333333; }
+body.theme-light .mix-result-val   { color:#000000; font-weight:700; }
+body.theme-light .mix-freq-label   { color:#333333; }
+body.theme-light .mix-freq-input   { background:#ffffff; color:#000000; border-color:#cccccc; }
+body.theme-light .mix-freq-sep     { color:#333333; }
+
+body.theme-light .btn         { color:#000000; border-color:#aaaaaa; background:#f0f0f0; }
+body.theme-light .btn:hover   { border-color:#000000; color:#000000; background:#e0e0e0; }
+body.theme-light .btn-primary { background:#222222; color:#ffffff; border-color:#222222; }
+body.theme-light .btn-danger  { background:#cc0000; color:#ffffff; border-color:#cc0000; }
+body.theme-light .btn-edit-cols { color:#000000; border-color:#aaaaaa; background:#f0f0f0; }
+
+body.theme-light .modal        { background:#ffffff; color:#000000; }
+body.theme-light .modal h3     { color:#000000; font-weight:800; }
+body.theme-light .modal-label  { color:#333333; }
+body.theme-light .modal-overlay { background:rgba(0,0,0,0.5); }
+body.theme-light .carga-opt    { background:#f5f5f5; border-color:#cccccc; color:#000000; }
+body.theme-light .carga-opt:hover   { border-color:#000000; background:#e8e8e8; }
+body.theme-light .carga-opt.selected { background:#222222; border-color:#000000; color:#ffffff; }
+body.theme-light .carga-opt-num  { color:#000000; font-weight:700; }
+body.theme-light .carga-opt-name { color:#000000; }
+body.theme-light .carga-opt-sat  { color:#444444; }
+body.theme-light .eq-tab        { color:#000000; border-color:#aaaaaa; background:#f0f0f0; }
+body.theme-light .eq-tab.active { background:#222222; color:#ffffff; border-color:#222222; }
+
+body.theme-light .pending-bar   { background:rgba(200,0,0,0.06); border-color:rgba(200,0,0,0.3); }
+body.theme-light .pending-bar-label { color:#cc0000; }
+body.theme-light .op-pending td { color:#cc0000 !important; }
+
+body.theme-light .ops-hint      { color:#555555; background:rgba(0,0,0,0.04); }
+body.theme-light .new-carga-input { background:#ffffff; color:#000000; border-color:#aaaaaa; }
+body.theme-light .nombre-input  { background:#ffffff; color:#000000; border-color:#aaaaaa; }
+body.theme-light .config-input  { background:#ffffff; color:#000000; border-color:#aaaaaa; }
+body.theme-light .config-box    { background:#ffffff; color:#000000; }
+body.theme-light .config-lbl    { color:#000000; }
+body.theme-light .config-lbl span { color:#555555; }
+body.theme-light .config-modal  { background:#ffffff; }
+
+/* Quitar colores de modelo en tema claro */
+body.theme-light .modelo-card * { color:#000000 !important; }
+body.theme-light table .time-cell.has-val { color:#000000 !important; }
+
+tr.op-row.op-error td { color: var(--red) !important; }
+tr.op-row.op-error td.pr-cell { color: var(--red) !important; font-weight: 700; }
+tr.op-row.op-error { background: rgba(192,0,42,0.07) !important; }
+tr.op-row.op-error:hover td { background: rgba(192,0,42,0.12) !important; }
+body.theme-light tr.op-row.op-error td { color: #cc0000 !important; }
+body.theme-light tr.op-row.op-error { background: rgba(204,0,0,0.06) !important; }
+
+
+.error-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  cursor: pointer;
+  margin-right: 5px;
+  flex-shrink: 0;
+  transition: background .15s;
+  vertical-align: middle;
+}
+.error-dot.active { background: var(--red); }
+.error-dot:hover  { background: var(--accent); }
+tr.op-row.op-error .error-dot { background: var(--red); }
+
+
+.escenario-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  font-family: 'Rajdhani';
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
+.escenario-btn {
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: none;
+  color: var(--gray);
+  font-family: 'Rajdhani';
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.escenario-btn:hover { border-color: var(--accent); color: var(--accent); }
+.escenario-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+.escenario-label { color: var(--gray); }
+.escenario-info { color: var(--yellow); font-size: 10px; margin-left: 6px; }
+
+
+tr.op-row.op-excel2 td { color: var(--yellow) !important; }
+tr.op-row.op-excel2 td.pr-cell { font-weight: 700; }
+tr.op-row.op-excel2 { background: rgba(255,209,102,0.07) !important; }
+body.theme-light tr.op-row.op-excel2 td { color: #b07800 !important; }
+body.theme-light tr.op-row.op-excel2 { background: rgba(176,120,0,0.07) !important; }
+
+/* Botón cargar Excel 2 */
+.excel2-btn {
+  padding: 2px 6px;
+  border: 1px solid var(--yellow);
+  border-radius: 3px;
+  color: var(--yellow);
+  background: none;
+  font-family: 'Rajdhani';
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+  letter-spacing: 1px;
+}
+.excel2-btn:hover { background: rgba(255,209,102,0.15); }
+.excel2-btn.active { background: rgba(255,209,102,0.2); }
+
+/* Modal Excel 2 */
+.modal-excel2 {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 200;
+  justify-content: center;
+  align-items: center;
+}
+.modal-excel2.open { display: flex; }
+.modal-excel2-box {
+  background: var(--panel);
+  border: 1px solid var(--yellow);
+  border-radius: 10px;
+  padding: 22px;
+  width: 420px;
+  max-width: 90vw;
+}
+.modal-excel2-box h3 { color: var(--yellow); font-size: 13px; letter-spacing: 1px; margin-bottom: 12px; }
+.excel2-info-row { display: flex; gap: 8px; margin-bottom: 6px; font-size: 11px; }
+.excel2-info-label { color: var(--gray); width: 80px; flex-shrink: 0; }
+.excel2-info-val { color: var(--white); }
+
+
+.pdf-btn {
+  padding: 2px 6px;
+  border: 1px solid var(--orange);
+  border-radius: 3px;
+  color: var(--orange);
+  background: none;
+  font-family: 'Rajdhani';
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+  letter-spacing: 1px;
+  position: relative;
+}
+.pdf-btn:hover { background: rgba(244,162,97,0.15); }
+.pdf-btn.drag-over { background: rgba(244,162,97,0.25); border-style: dashed; }
+.srv-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #555;
+  display: inline-block;
+  margin-right: 3px;
+  vertical-align: middle;
+}
+.srv-dot.on  { background: var(--green); }
+.srv-dot.off { background: var(--red); }
+
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body class="theme-dark">
+
+<!-- SELECTOR ESCENARIO -->
+<div class="escenario-bar" id="escenario-bar">
+  <span class="escenario-label">ESCENARIO:</span>
+  <button class="escenario-btn active" id="esc-a-btn" onclick="setEscenario('A')" title="Tacto 1.09 min">A <span style="font-size:9px;opacity:0.7">1.09</span></button>
+  <button class="escenario-btn" id="esc-b-btn" onclick="setEscenario('B')" title="Tacto 2.14 min">B <span style="font-size:9px;opacity:0.7">2.14</span></button>
+</div>
+
+<!-- HEADER -->
+
+<div class="theme-bar" id="theme-bar">
+  <span class="theme-bar-label">TEMA</span>
+  <button class="theme-btn active" data-theme="dark"
+    style="background:#050a12;" title="Oscuro"
+    onclick="setTheme('dark')"></button>
+  <button class="theme-btn" data-theme="light"
+    style="background:#f0f4f8;border-color:#b0c4d8;" title="Claro"
+    onclick="setTheme('light')"></button>
+  <button class="theme-btn" data-theme="grey"
+    style="background:#1a1a2e;" title="Gris azulado"
+    onclick="setTheme('grey')"></button>
+  <button class="theme-btn" data-theme="green"
+    style="background:#0a1a0f;" title="Verde industrial"
+    onclick="setTheme('green')"></button>
+  <button class="theme-btn" data-theme="midnight"
+    style="background:#0d0d1a;" title="Medianoche"
+    onclick="setTheme('midnight')"></button>
+  <span class="theme-bar-label" style="margin-left:8px">PLANTA</span>
+  <input type="color" id="plant-color-1" value="#0d1929" title="Color fondo planta"
+         style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border);
+                cursor:pointer;padding:0;background:none;"
+         oninput="setPlantBg(this.value, document.getElementById('plant-color-2').value)">
+  <input type="color" id="plant-color-2" value="#050a12" title="Color borde planta"
+         style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border);
+                cursor:pointer;padding:0;background:none;"
+         oninput="setPlantBg(document.getElementById('plant-color-1').value, this.value)">
+  <span class="theme-bar-label" style="margin-left:8px">CARGA</span>
+  <input type="color" id="carga-color-inp" value="#0a0e1a" title="Color fondo vista carga"
+         style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border);
+                cursor:pointer;padding:0;background:none;"
+         oninput="setCargaBg(this.value)">
+  <div style="width:1px;height:20px;background:var(--border);margin:0 6px;flex-shrink:0"></div>
+  <label title="Cargar Excel" style="cursor:pointer;display:flex;align-items:center;gap:4px;
+    font-family:Rajdhani;font-size:10px;font-weight:700;color:var(--gray);letter-spacing:1px;
+    padding:2px 6px;border:1px solid var(--border);border-radius:3px;transition:all .2s"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--gray)'">
+    📊
+    <input type="file" accept=".xlsx,.xls" onchange="loadExcel(this)" style="display:none">
+  </label>
+  <label id="pdf-upload-btn" class="pdf-btn" title="Cargar PDF de cargas (requiere servidor)" style="position:relative;display:inline-flex;align-items:center;gap:3px">
+    <span class="srv-dot" id="srv-dot"></span>📄 PDF
+    <input type="file" accept=".pdf" id="pdf-file-inp" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%" onchange="subirPDF(this.files[0]);this.value=''">
+  </label>
+  <label id="excel2-load-btn" class="excel2-btn" title="Cargar Excel 2 (consulta)">
+    📊2
+    <input type="file" accept=".xlsx,.xls" onchange="loadExcel2(this)" style="display:none;position:absolute">
+  </label>
+  <div class="pdf-drop-zone" id="pdf-drop-zone" title="Arrastra PDF o haz clic"
+    style="padding:2px 6px;font-size:10px;border-width:1px">
+    <div class="server-status" id="server-status"></div>
+    📄
+    <input type="file" accept=".pdf" onchange="subirPDF(this.files[0])">
+  </div>
+  <button onclick="exportarHTML()" title="Exportar HTML con cambios"
+    style="background:none;border:1px solid var(--border);border-radius:3px;
+    color:var(--gray);font-size:11px;cursor:pointer;padding:2px 6px;
+    font-family:Rajdhani;font-weight:700;transition:all .2s"
+    onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--gray)'">⬇</button>
+  <button onclick="if(confirm('¿Borrar todos los cambios guardados?')){borrarEstado();location.reload();}"
+    title="Borrar estado guardado"
+    style="background:none;border:1px solid var(--border);border-radius:3px;
+    color:var(--gray);font-size:11px;cursor:pointer;padding:2px 6px;
+    font-family:Rajdhani;font-weight:700;transition:all .2s"
+    onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--gray)'">🗑</button>
+</div>
+
+<div class="header">
+  <div>
+    <div class="logo">ML2 <span>RAMAL 2</span></div>
+    <div class="subtitle">PLANTA EQ16-17 — TALLER 8 — SEAT MARTORELL</div>
+  </div>
+  <div class="header-stats" style="align-items:center">
+    <div class="stat-box"><div class="stat-val" id="hdr-cargas">44</div><div class="stat-lbl">CARGAS</div></div>
+    <div class="stat-box"><div class="stat-val" id="hdr-tacto">1,090</div><div class="stat-lbl">TPO TACTO</div></div>
+    <div class="stat-box"><div class="stat-val" id="hdr-prod">403</div><div class="stat-lbl">PRODUCCIÓN</div></div>
+    <div class="stat-box"><div class="stat-val" id="hdr-equipo">EQ16-17</div><div class="stat-lbl">EQUIPO</div></div>
+    <div class="stat-box"><div class="stat-val" style="color:var(--green)" id="hdr-fecha">—</div><div class="stat-lbl">FECHA</div></div>
+    <div style="position:relative;display:flex;align-items:center;gap:6px;margin-right:4px">
+      <input id="buscador-carga" type="text" placeholder="Nº carga..."
+             style="width:88px;background:var(--bg3);border:1px solid var(--border);
+                    border-radius:4px;color:var(--white);font-family:'Share Tech Mono';
+                    font-size:12px;padding:4px 8px;outline:none;"
+             onkeydown="if(event.key==='Enter') buscarCarga(this.value)"
+             oninput="sugerirCarga(this.value)">
+      <button onclick="buscarCarga(document.getElementById('buscador-carga').value)"
+              style="padding:4px 10px;background:var(--bg3);border:1px solid var(--border);
+                     border-radius:4px;color:var(--accent);font-family:'Rajdhani';
+                     font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px;">IR</button>
+      <div id="buscador-sugerencias"
+           style="position:absolute;top:32px;right:0;background:var(--panel);
+                  border:1px solid var(--border);border-radius:4px;z-index:200;
+                  min-width:220px;display:none;max-height:200px;overflow-y:auto;"></div>
+    </div>
+    <button class="config-btn" onclick="openConfig()">⚙ CONFIG</button>
+  </div>
+</div>
+
+<!-- ── VISTA PLANTA ── -->
+<div class="view active" id="view-plant">
+  <div class="plant-wrap">
+    <svg class="plant-svg" viewBox="0 0 5200 580" id="plant-svg">
+      <defs>
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M40 0L0 0 0 40" fill="none" stroke="#0d1f3a" stroke-width="0.5"/>
+        </pattern>
+        <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L9,3 z" fill="#0d3a6a"/>
+        </marker>
+      </defs>
+      <rect width="920" height="580" fill="url(#grid)"/>
+
+      <!-- Línea ensamblaje -->
+      <path d="M30 295 L890 295" stroke="#0d2a4a" stroke-width="20"/>
+      <path d="M30 295 L890 295" stroke="#071520" stroke-width="16"/>
+      <path d="M40 295 L880 295" stroke="#0d3a6a" stroke-width="1.5" stroke-dasharray="8,5" marker-end="url(#arr)"/>
+      <text x="460" y="306" text-anchor="middle" font-family="Share Tech Mono" font-size="8" fill="#0d3a6a" letter-spacing="2">→ SENTIDO AVANCE CARROCERÍA →</text>
+
+      <!-- Carrocerías -->
+      <g id="zonas-group"></g>
+      <g id="cars-group"></g>
+
+      <!-- Zonas de texto -->
+      <text x="14" y="30" font-family="Rajdhani" font-size="9" fill="#1a3a5a" letter-spacing="3">ML2 RAMAL 2 — RETORNO PLATAFORMA BA2 — TACTOS L222 → L247</text>
+      
+
+      <!-- Cargas (generadas por JS) -->
+      <g id="cargas-group"></g>
+
+      <!-- Leyenda -->
+      <g transform="translate(20,545)">
+        <circle cx="6" cy="-3" r="5" fill="#0d2a4a" stroke="#06d6a0" stroke-width="1.5"/>
+        <text x="15" y="0" font-family="Rajdhani" font-size="9" fill="#4a6080">OK (&lt;100%)</text>
+        <circle cx="100" cy="-3" r="5" fill="#0d2a4a" stroke="#ffd166" stroke-width="1.5"/>
+        <text x="109" y="0" font-family="Rajdhani" font-size="9" fill="#4a6080">SATURADO (100-110%)</text>
+        <circle cx="240" cy="-3" r="5" fill="#0d2a4a" stroke="#ef476f" stroke-width="1.5"/>
+        <text x="249" y="0" font-family="Rajdhani" font-size="9" fill="#4a6080">CRÍTICO (&gt;110%)</text>
+        <text x="350" y="0" font-family="Rajdhani" font-size="9" fill="#4a6080">— Haz clic en una carga para ver el detalle</text>
+      </g>
+    </svg>
+  </div>
+    <div class="plant-zoom-bar">
+      <button class="plant-zoom-btn" onclick="plantZoom(1.2)" title="Zoom +">+</button>
+      <button class="plant-zoom-btn" onclick="plantZoom(0.83)" title="Zoom −">−</button>
+      <button class="plant-zoom-btn" onclick="plantZoomReset()" title="Reset" style="font-size:11px;width:auto;padding:0 8px">FIT</button>
+    </div>
+    <div class="plant-nav plant-nav-left">
+      <button class="plant-nav-btn" onclick="plantScroll(-300)">‹</button>
+    </div>
+    <div class="plant-nav plant-nav-right">
+      <button class="plant-nav-btn" onclick="plantScroll(300)">›</button>
+    </div>
+  </div>
+
+<!-- ── VISTA CARGA ── -->
+<div class="view" id="view-carga">
+  <div class="carga-view-header">
+    <button class="back-btn" onclick="goBack()">🏭 IR A PLANTA</button>
+    <div style="flex:1">
+      <div class="carga-view-title" id="cv-title">—</div>
+      <div class="carga-view-sub" id="cv-sub">—</div>
+    </div>
+    <button class="btn-edit-cols" onclick="openColsModal()">✏ MODELOS</button>
+    <button class="btn-edit-cols" onclick="openNewOp()" style="border-color:var(--green);color:var(--green)">+ OP</button>
+    <button class="btn-edit-cols" onclick="eliminarCarga(currentCarga)" style="border-color:var(--red);color:var(--red)">🗑 CARGA</button>
+    <div style="display:flex;align-items:center;gap:8px;margin-left:12px">
+      <span style="font-size:10px;color:var(--gray);letter-spacing:1px">UBICACIÓN</span>
+      <span class="ubicacion-current" id="cv-ubicacion">—</span>
+      <button class="btn-ubicacion" onclick="openUbicacion()">✎ CAMBIAR</button>
+    </div>
+  </div>
+  <div class="carga-view-body">
+    <!-- Panel modelos -->
+    <div class="modelos-panel">
+      <div class="section-title">TIEMPOS POR MODELO</div>
+      <div id="cv-modelos"></div>
+      <div class="section-title" style="margin-top:16px">TPO TACTO</div>
+      <div style="font-family:'Share Tech Mono';font-size:20px;color:var(--accent)" id="cv-tacto-val">1,090</div>
+      <div style="font-size:10px;color:var(--gray)">MIN</div>
+    </div>
+    <!-- Panel operaciones -->
+    <div class="ops-panel">
+      <div class="ops-toolbar">
+        <span class="ops-selected-count" id="sel-count">Clic para seleccionar · Doble clic para enviar una</span>
+        <div>
+          <button class="btn-clear-sel" id="btn-clear-sel" onclick="clearSelOps()">✕ Limpiar</button>
+          <button class="btn-send-sel" id="btn-send-sel" onclick="openEnviarMultiple()">⇄ Enviar seleccionadas</button>
+        </div>
+      </div>
+      <div id="pending-bar-container"></div>
+      <div class="ops-table-wrap">
+        <table>
+          <thead id="cv-thead"></thead>
+          <tbody id="cv-tbody"></tbody>
+        </table>
+      </div>
+      <div class="ops-hint">💡 Doble clic en una operación para enviarla a otra carga</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ENVIAR OPERACIÓN -->
+<div class="modal-overlay" id="modal-enviar">
+  <div class="modal">
+    <h3>⇄ ENVIAR OPERACIÓN</h3>
+    <div style="font-size:11px;color:var(--gray)">Origen: <span id="m-origen" style="color:var(--accent)"></span></div>
+    <div class="modal-op-info">
+      <div class="modal-op-pr" id="m-op-pr">—</div>
+      <div class="modal-op-desc" id="m-op-desc">—</div>
+    </div>
+
+    <!-- Editor de tiempos por modelo -->
+    <div class="modal-label" style="display:none">TIEMPOS POR MODELO</div>
+    <div class="times-editor" id="times-editor" style="display:none"></div>
+
+    <div class="modal-label" style="margin-top:14px">SELECCIONA EQUIPO</div>
+    <div class="eq-tabs" id="eq-tabs">
+      <button class="eq-tab" data-eq="13" onclick="filtrarEq('13')">EQ 13</button>
+      <button class="eq-tab" data-eq="15" onclick="filtrarEq('15')">EQ 15</button>
+      <button class="eq-tab" data-eq="16" onclick="filtrarEq('16')">EQ 16</button>
+      <button class="eq-tab" data-eq="17" onclick="filtrarEq('17')">EQ 17</button>
+    </div>
+    <div class="modal-label" id="lbl-destino">SELECCIONA CARGA DESTINO</div>
+    <div class="carga-grid" id="m-carga-grid"></div>
+    <div class="nombre-field">
+      <label>SOLICITADO POR (nombre y apellido)</label>
+      <input class="nombre-input" id="m-nombre-supervisor" type="text"
+             placeholder="Nombre Apellido" maxlength="50">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">CANCELAR</button>
+      <button class="btn btn-danger" onclick="confirmarEliminar()">🗑 ELIMINAR OP</button>
+      <button class="btn" onclick="guardarYCerrar()" style="border-color:var(--green);color:var(--green)">💾 GUARDAR</button>
+      <button class="btn btn-primary" onclick="confirmarEnvio()">⇄ ENVIAR</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- CONFIG MODAL -->
+<div class="config-modal" id="config-modal">
+  <div class="config-box">
+    <h3>⚙ PARÁMETROS DE LÍNEA</h3>
+
+    <div class="config-row">
+      <div class="config-lbl">TIEMPO DE TACTO
+        <span>Tiempo por unidad en minutos</span>
+      </div>
+      <input class="config-input" id="cfg-tacto" type="number" step="0.001" min="0.1" value="1.090">
+    </div>
+
+    <div class="config-row">
+      <div class="config-lbl">MINUTOS DE TRABAJO
+        <span>Minutos totales por turno (fijo)</span>
+      </div>
+      <input class="config-input" id="cfg-min" type="number" step="1" min="1" value="440" style="background:rgba(0,180,216,0.05);border-color:var(--accent2);">
+    </div>
+    <div class="config-row">
+      <div class="config-lbl">PRODUCCIÓN CALCULADA
+        <span>= Minutos / (Tacto × Sat.Obj/100)</span>
+      </div>
+      <div style="font-family:'Share Tech Mono';font-size:20px;color:var(--accent)" id="cfg-prod-preview">—</div>
+    </div>
+
+    <div class="config-row">
+      <div class="config-lbl">EQUIPO
+        <span>Número de equipo</span>
+      </div>
+      <input class="config-input" id="cfg-equipo" type="text" value="EQ16-17" style="font-family:'Rajdhani';font-size:13px;">
+    </div>
+
+    <div class="config-row">
+      <div class="config-lbl">SUPERVISORA
+        <span>Nombre del supervisor/a</span>
+      </div>
+      <input class="config-input" id="cfg-super" type="text" value="S06" style="font-family:'Rajdhani';font-size:13px;width:150px;">
+    </div>
+
+    <div style="font-size:9px;color:var(--accent);letter-spacing:2px;margin:8px 0 4px">UMBRALES DE SATURACIÓN</div>
+    <div class="config-row">
+      <div class="config-lbl">OBJETIVO % <span>verde si ≥ este valor</span></div>
+      <input class="config-input" id="cfg-sat-obj" type="number" step="1" min="50" max="130" value="90"
+             style="background:rgba(6,214,160,0.05);border-color:#06d6a0">
+    </div>
+    <div class="config-row">
+      <div class="config-lbl">AVISO % <span>naranja si ≥ este valor</span></div>
+      <input class="config-input" id="cfg-sat-aviso" type="number" step="1" min="40" max="99" value="80"
+             style="background:rgba(255,209,102,0.05);border-color:#ffd166">
+    </div>
+
+    <div class="config-actions">
+      <button class="btn" onclick="closeConfig()">CANCELAR</button>
+      <button class="btn btn-primary" onclick="applyConfig()">APLICAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXCEL LOADER -->
+
+<div class="drop-overlay" id="drop-overlay">
+  <div class="drop-icon">📊</div>
+  <div class="drop-txt">SOLTAR EXCEL AQUÍ</div>
+  <div class="drop-sub">Cargas_EQ16-17_Tramo4_final.xlsx</div>
+</div>
+<div class="loader-overlay" id="loader-overlay">
+  <div class="spinner"></div>
+  <div class="loader-txt">CARGANDO DATOS</div>
+  <div class="loader-sub" id="loader-msg">Leyendo Excel...</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ── DATOS ─────────────────────────────────────────────────────────────
+const DASHBOARD_VERSION = "202605281043";
+const CARGAS = []];
+let TACTO = 1.090; // se mantiene por compatibilidad, usar CONFIG.tacto
+const cargaMap = {};
+CARGAS.forEach(c => cargaMap[c.num] = c);
+
+const COL_COLORS = {
+  '5FF':  '#4a9eff',
+  '5FN':  '#06d6a0',
+  '38X':  '#a8d8a8',
+  '382':  '#d8c8a8',
+  '316':  '#a8c8d8',
+  'Formentor':'#60b4e8','CUPRA León':'#7ecfff','SEAT León':'#a8d8f0',
+  'MHEV':'#ffd166','PHEV':'#f4b8c8','Gasolina':'#f4a261',
+  'Diesel':'#90c8e8','GD':'#c4a8e8','VZ5':'#ffb3c6','RESTO':'#8899aa'
+};
+
+let currentCarga = null;
+let pendingOp = null;
+let selectedDest = null;
+
+// ── FECHA ─────────────────────────────────────────────────────────────
+document.getElementById('hdr-fecha').textContent =
+  new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'2-digit'});
+
+// ── PLANTA ────────────────────────────────────────────────────────────
+// Posiciones de cargas en la planta
+// POSITIONS reemplazado por TACTO_INFO dinámico
+
+// Umbrales de saturación (configurables)
+const SAT_CONFIG = {
+  objetivo: 90,    // % mínimo para verde
+  aviso: 80,       // % mínimo para naranja (por debajo → rojo)
+  exceso: 100,     // % máximo antes de sobresaturación
+};
+
+function getTimeColor(tiempo, nOps) {
+  const tactoEfectivo = CONFIG.tacto * (parseFloat(nOps) || 1);
+  if (tiempo <= 0)            return '#2a4a6a';
+  if (tiempo > tactoEfectivo) return '#ef476f';
+  return '#06d6a0';
+}
+
+function getSatColor(sat) {
+  if (sat <= 0)                        return '#2a4a6a';  // sin datos
+  if (sat > SAT_CONFIG.exceso)         return '#ef476f';  // ❌ rojo — supera tacto
+  if (sat >= SAT_CONFIG.objetivo)      return '#06d6a0';  // ✅ verde ≥90% y ≤100%
+  if (sat >= SAT_CONFIG.aviso)         return '#ffd166';  // ⚠ naranja 80-90%
+  return '#ef476f';                                        // ❌ rojo <80%
+}
+
+function getMaxSat(c) {
+  if (!c.totales || Object.keys(c.totales).length === 0) return 0;
+  const cols = Object.keys(c.totales).filter(k => k !== 'TODOS');
+  const vals = cols.map(k => c.totales[k]).filter(v => v > 0);
+  if (!vals.length) return 0;
+  const maxTime = Math.max(...vals);
+  const nOps = parseFloat(TACTO_INFO[c.num]?.ops || 1);
+  return Math.round((parseFloat(maxTime)||0) / (CONFIG.tacto * nOps) * 100);
+}
+
+// Layout por tactos reales
+const TACTO_INFO = {
+  '2263':{tacto:'L221',label:'Motor',        ops:1, lado:'izq', mhev:false},
+  '2235':{tacto:'L222',label:'Mont.B Izq',   ops:1, lado:'izq'},
+  '2253':{tacto:'L222',label:'Mont.B Der',   ops:1, lado:'der'},
+  '2243':{tacto:'L223',label:'Taster 1',     ops:1, lado:'der'},
+  '2223':{tacto:'L224',label:'Taster',       ops:1, lado:'der'},
+  '2267':{tacto:'L224',label:'Transform.',   ops:1, lado:'izq', mhev:true},
+  '2277':{tacto:'L225',label:'Torn.Cin.Izq', ops:1, lado:'izq'},
+  '2298':{tacto:'L225',label:'Torn.Cin.Der', ops:1, lado:'der'},
+  '2247':{tacto:'L226',label:'Escobilla',    ops:1, lado:'der'},
+  '2251':{tacto:'L227',label:'Tubos/Aires',  ops:1, lado:'der'},
+  '2287':{tacto:'L228',label:'MPS 1',        ops:1, lado:'izq'},
+  '2273':{tacto:'L229',label:'Consola',      ops:1, lado:'der'},
+  '2327':{tacto:'L232',label:'Spoiler',      ops:1, lado:'izq'},
+  '2335':{tacto:'L233',label:'Filtro',       ops:1, lado:'der'},
+  '2337':{tacto:'L233',label:'Laterales',    ops:1, lado:'der'},
+  '2338':{tacto:'L233',label:'Insonorizante',ops:1, lado:'der'},
+  '2353':{tacto:'L235',label:'Anilla C.Izq', ops:1, lado:'izq'},
+  '2363':{tacto:'L236',label:'Marco C.P.',   ops:1, lado:'der'},
+  '2377':{tacto:'L237',label:'Desconexión',  ops:1, lado:'izq'},
+  '2383':{tacto:'L238',label:'Tuberías',     ops:2, lado:'der'},
+
+  // EQ13
+  '2047':{tacto:'L204',label:'Cristales',      ops:2, lado:'der'},
+  '2063':{tacto:'L206',label:'Custodias',      ops:1, lado:'der'},
+  '2073':{tacto:'L207',label:'Tubos freno 1',  ops:1, lado:'der'},
+  '2083':{tacto:'L208',label:'Tubos freno 2',  ops:2, lado:'der'},
+  '2087':{tacto:'L208',label:'Conexión BCM',   ops:2, lado:'izq'},
+  '2101':{tacto:'L210',label:'Tubos freno 3',  ops:2, lado:'der'},
+  '2105':{tacto:'L210',label:'Moldura portón', ops:1, lado:'izq'},
+  '2111':{tacto:'L211',label:'Masas motor',    ops:1, lado:'izq'},
+  '2113':{tacto:'L211',label:'Batería MHEV',   ops:2, lado:'der'},
+  // EQ15
+  '2123':{tacto:'L212',label:'Cin. anterior',  ops:1, lado:'izq'},
+  '2125':{tacto:'L212',label:'Soportes',       ops:1, lado:'der'},
+  '2127':{tacto:'L212',label:'Cin. anterior 2',ops:1, lado:'der'},
+  '2137':{tacto:'L213',label:'Airbag izq',     ops:1, lado:'izq'},
+  '2143':{tacto:'L214',label:'Airbag der',     ops:1, lado:'der'},
+  '2151':{tacto:'L215',label:'Motor limpia',   ops:1, lado:'izq'},
+  '2159':{tacto:'L215',label:'Raku 1',         ops:1, lado:'der'},
+  '2163':{tacto:'L216',label:'Masas der',      ops:1, lado:'der'},
+  '2167':{tacto:'L216',label:'Masas izq',      ops:1, lado:'izq'},
+  '2171':{tacto:'L217',label:'Centralita',     ops:1, lado:'izq'},
+  '2183':{tacto:'L218',label:'Tubos sup',      ops:1, lado:'der'},
+  '2193':{tacto:'L219',label:'Tubos inf',      ops:1, lado:'izq'},
+  '2195':{tacto:'L219',label:'Piloto móvil',   ops:1, lado:'der'},
+  '2199':{tacto:'L219',label:'Raku-asideros',  ops:1, lado:'der'},
+  '2499':{tacto:'L247',label:'Formación',    ops:2.33, lado:'der', inactive:true},
+};
+
+const TACTOS_ORDEN = ['L202','L203','L204','L205','L206','L207','L208','L209','L210','L211','L212','L213','L214','L215','L216','L217','L218','L219','L220','L221','L222','L223','L224','L225','L226','L227','L228','L229','L230','L231','L232','L233','L234','L235','L236','L237','L238','L239','L240','L241','L242','L243','L244','L245','L246','L247'];
+// Espacio fijo por tacto en el viewport
+const TACTO_SPACING = 110; // px por tacto
+const X_ORIGIN = 70;       // X del primer tacto
+const LINE_Y = 300;  // Y de la línea de ensamblaje
+const Y_TOP    = 120; // Y cargas arriba (izquierdo)
+const Y_BOT    = 445; // Y cargas abajo (derecho)
+const Y_BOT2   = 493; // Y tercera carga mismo tacto
+
+function buildPlant() {
+  const g = document.getElementById('cargas-group');
+  g.innerHTML = '';
+  const cars = document.getElementById('cars-group');
+  cars.innerHTML = '';
+
+  // ── ZONAS DE GRUPO Y ELEMENTOS PLANTA ───────────────────────────────
+  const zonas = document.getElementById('zonas-group');
+  if (zonas) {
+    const tactoX = {};
+    TACTOS_ORDEN.forEach((t,i) => tactoX[t] = X_ORIGIN + i * TACTO_SPACING);
+
+    let svgContent = '';
+
+    // ── FONDO GENERAL ──────────────────────────────────────────────────
+    // Zona superior (operarios)
+    svgContent += `<rect x="0" y="0" width="99999" height="${LINE_Y - 40}"
+      fill="#050e1a" fill-opacity="0.8"/>`;
+    // Zona inferior (materiales)
+    svgContent += `<rect x="0" y="${LINE_Y + 40}" width="99999" height="300"
+      fill="#030a10" fill-opacity="0.9"/>`;
+
+    // ── ROBOT GANTRY (antes de L202) ───────────────────────────────────
+    const xGantry = X_ORIGIN - TACTO_SPACING * 2;
+    svgContent += `
+      <rect x="${xGantry - 30}" y="${LINE_Y - 80}" width="120" height="160"
+        fill="none" stroke="#1a3a2a" stroke-width="1.5" stroke-dasharray="5,3" rx="4"/>
+      <text x="${xGantry + 30}" y="${LINE_Y - 55}" text-anchor="middle"
+        font-family="Rajdhani" font-size="8" fill="#1a5a3a" letter-spacing="1">CELULA</text>
+      <text x="${xGantry + 30}" y="${LINE_Y - 45}" text-anchor="middle"
+        font-family="Rajdhani" font-size="8" fill="#1a5a3a" letter-spacing="1">ROBOT</text>
+      <text x="${xGantry + 30}" y="${LINE_Y - 35}" text-anchor="middle"
+        font-family="Share Tech Mono" font-size="7" fill="#0f3a20">R3/R4</text>`;
+
+    // ── ZONAS DE EQUIPO CON ESTILO PLANO ──────────────────────────────
+    const equipos = [
+      { label:'TRAMO 3', sublabel:'EQ 13 · EQ 15', t1:'L202', t2:'L219',
+        fill:'#060e18', stroke:'#0d2a45', textColor:'#1a5a8a' },
+      { label:'TRAMO 4', sublabel:'EQ 16 · EQ 17', t1:'L221', t2:'L247',
+        fill:'#080618', stroke:'#1a0d3a', textColor:'#3a1a6a' },
+    ];
+
+    equipos.forEach(z => {
+      const x1 = (tactoX[z.t1] || X_ORIGIN) - TACTO_SPACING * 0.6;
+      const x2 = (tactoX[z.t2] || X_ORIGIN) + TACTO_SPACING * 0.6;
+      const w = x2 - x1;
+
+      // Fondo zona
+      svgContent += `<rect x="${x1}" y="5" width="${w}" height="540"
+        fill="${z.fill}" fill-opacity="0.7"
+        stroke="${z.stroke}" stroke-width="1.5" rx="3"/>`;
+
+      // Etiqueta tramo arriba
+      svgContent += `<text x="${x1 + w/2}" y="18" text-anchor="middle"
+        font-family="Rajdhani" font-weight="700" font-size="10"
+        fill="${z.textColor}" letter-spacing="3">${z.label}</text>`;
+      svgContent += `<text x="${x1 + w/2}" y="28" text-anchor="middle"
+        font-family="Rajdhani" font-size="8"
+        fill="${z.textColor}" fill-opacity="0.7" letter-spacing="2">${z.sublabel}</text>`;
+
+      // Número grande semitransparente
+      svgContent += `<text x="${x1 + w/2}" y="${LINE_Y + 80}" text-anchor="middle"
+        font-family="Share Tech Mono" font-size="60" font-weight="700"
+        fill="${z.stroke}" fill-opacity="0.06">${z.label.replace('TRAMO ','T')}</text>`;
+    });
+
+    // ── SEPARADOR SUPERVISOR (entre L229 y L232) ───────────────────────
+    const xSep1 = (tactoX['L229'] || 0) + TACTO_SPACING * 0.6;
+    const xSep2 = (tactoX['L232'] || 0) - TACTO_SPACING * 0.6;
+    if (xSep2 > xSep1) {
+      svgContent += `<rect x="${xSep1}" y="5" width="${xSep2 - xSep1}" height="540"
+        fill="#0a0a05" fill-opacity="0.8" stroke="#2a2a10" stroke-width="1" rx="2"/>`;
+      const xMid = xSep1 + (xSep2-xSep1)/2;
+      svgContent += `<text x="${xMid}" y="${LINE_Y}"
+        text-anchor="middle" font-family="Rajdhani" font-size="8"
+        fill="#3a3a15" letter-spacing="1"
+        transform="rotate(-90 ${xMid} ${LINE_Y})">SUPERVISOR</text>`;
+    }
+
+    // ── LÍNEA DE ALTIMETRÍA (suelo) ────────────────────────────────────
+    const lineEnd = X_ORIGIN + TACTOS_ORDEN.length * TACTO_SPACING + 50;
+    // Línea de altimetría superior (zona operarios)
+    svgContent += `<line x1="${X_ORIGIN - 50}" y1="${LINE_Y - 95}" x2="${lineEnd}" y2="${LINE_Y - 95}"
+      stroke="#0d2a1a" stroke-width="1" stroke-dasharray="6,4"/>`;
+    svgContent += `<text x="${X_ORIGIN - 48}" y="${LINE_Y - 88}"
+      font-family="Share Tech Mono" font-size="6" fill="#0d2a1a">ALTIMETRIA 415</text>`;
+
+    // Línea de altimetría inferior
+    svgContent += `<line x1="${X_ORIGIN - 50}" y1="${LINE_Y + 95}" x2="${lineEnd}" y2="${LINE_Y + 95}"
+      stroke="#0d1a2a" stroke-width="1" stroke-dasharray="6,4"/>`;
+
+    // ── PASILLO AGV (debajo de línea) ──────────────────────────────────
+    svgContent += `<rect x="${X_ORIGIN - 40}" y="${LINE_Y + 100}" width="${lineEnd - X_ORIGIN + 40}" height="25"
+      fill="#050a08" fill-opacity="0.6" stroke="#0a2015" stroke-width="0.5"/>`;
+    svgContent += `<text x="${X_ORIGIN + 20}" y="${LINE_Y + 116}"
+      font-family="Rajdhani" font-size="7" fill="#0a2015" letter-spacing="3">AGV</text>`;
+
+    // ── GRUPOS DE TRABAJO (G1-G18) ─────────────────────────────────────
+    // Según el plano, grupos identificados por su posición en la línea
+    const gruposTrabajo = [
+      { num:'G13', tacto:'L208', lado:'izq' },
+      { num:'G15', tacto:'L215', lado:'izq' },
+      { num:'G16', tacto:'L225', lado:'izq' },
+      { num:'G17', tacto:'L235', lado:'der' },
+    ];
+    gruposTrabajo.forEach(g => {
+      const gx = tactoX[g.tacto] || 0;
+      const gy = g.lado === 'izq' ? LINE_Y - 110 : LINE_Y + 110;
+      svgContent += `<rect x="${gx - 28}" y="${gy - 12}" width="56" height="20"
+        fill="none" stroke="#1a3050" stroke-width="1" stroke-dasharray="3,2" rx="2"/>`;
+      svgContent += `<text x="${gx}" y="${gy + 2}" text-anchor="middle"
+        font-family="Rajdhani" font-size="8" fill="#1a3050" letter-spacing="2">${g.num}</text>`;
+    });
+
+    zonas.innerHTML = svgContent;
+  }
+
+  // X fija por tacto — espacio igual entre carrocerías
+  const tactoX = {};
+  TACTOS_ORDEN.forEach((t,i) => tactoX[t] = X_ORIGIN + i * TACTO_SPACING);
+
+  // Carrocerías en la línea — una por tacto, espaciado fijo
+  TACTOS_ORDEN.forEach((t, i) => {
+    const x = tactoX[t];
+    const carType = i%2===0 ? '5FF' : '5FN';
+    // Carrocería (vista desde arriba)
+    cars.innerHTML += `
+      <rect x="${x-26}" y="${LINE_Y-18}" width="52" height="36" rx="5"
+        fill="#0a1628" stroke="#0d3a5f" stroke-width="1.5"/>
+      <rect x="${x-19}" y="${LINE_Y-12}" width="38" height="24" rx="3"
+        fill="#050e1a" stroke="#0a2545" stroke-width="0.8"/>
+      <text x="${x}" y="${LINE_Y+4}" text-anchor="middle"
+        font-family="Share Tech Mono" font-size="6" fill="#0d3a5f">${carType}</text>
+      <text x="${x}" y="${LINE_Y+30}" text-anchor="middle"
+        font-family="Share Tech Mono" font-size="8" fill="#1a4a7a" font-weight="600">${t}</text>`;
+  });
+
+  // Contar cargas por tacto para posición arriba/abajo
+  const tactoCount = {};
+  Object.entries(TACTO_INFO).forEach(([num, info]) => {
+    if (!tactoCount[info.tacto]) tactoCount[info.tacto] = [];
+    tactoCount[info.tacto].push(num);
+  });
+
+  // Renderizar cargas
+  Object.entries(TACTO_INFO).forEach(([num, info]) => {
+    const c = cargaMap[num];
+    const sat = c ? getMaxSat(c) : 0;
+    const satColor  = getSatColor(sat);
+    // Tiempo máximo de la carga
+    const _tVals = c ? Object.entries(c.totales||{}).filter(([k]) => k!=='TODOS').map(([,v]) => parseFloat(v)||0).filter(v => v > 0) : [];
+    const maxTiempo = _tVals.length > 0 ? Math.max(..._tVals) : 0;
+    const nOpsC     = parseFloat(info.ops || 1);
+    const timeColor = maxTiempo > 0 ? getTimeColor(maxTiempo, nOpsC) : '#2a4a6a';
+    const x = tactoX[info.tacto] || 500;
+    const siblings = tactoCount[info.tacto] || [num];
+    const posIdx = siblings.indexOf(num); // 0=primero, 1=segundo, 2=tercero
+
+    // Posición Y según lado (izq=arriba, der=abajo)
+    const lado = info.lado || 'der';
+    const siblingsSameLado = siblings.filter(n => (TACTO_INFO[n]?.lado||'der') === lado);
+    const ladoIdx = siblingsSameLado.indexOf(num);
+    const nSameLado = siblingsSameLado.length;
+
+    let y, lineY2;
+    if (lado === 'izq') {
+      // IZQ: primera en Y_TOP, si hay 2 la segunda va más arriba (escalonar hacia arriba)
+      y = Y_TOP - ladoIdx * 52;
+      lineY2 = LINE_Y - 18;
+    } else {
+      // DER: primera en Y_BOT, si hay más se escalonan hacia abajo
+      // Para L233 (3 cargas DER): separación más compacta
+      const step = nSameLado > 2 ? 48 : 52;
+      y = Y_BOT + ladoIdx * step;
+      lineY2 = LINE_Y + 18;
+    }
+
+    // Offset X: ninguno — respetar la X exacta del tacto
+    // Solo pequeño offset si hay cargas de AMBOS lados en mismo tacto
+    let xOff = 0;
+    const hasIzq = siblings.some(n => (TACTO_INFO[n]?.lado||'der') === 'izq');
+    const hasDer = siblings.some(n => (TACTO_INFO[n]?.lado||'der') === 'der');
+    if (hasIzq && hasDer) {
+      xOff = lado === 'izq' ? -6 : 6;
+    }
+
+    const cx = x + xOff;
+    const bgFill   = info.inactive ? '#0d0d14' : (info.mhev ? '#0f1e08' : '#0d1e38');
+    const borderCol= info.inactive ? '#1e1e2a' : (info.mhev ? '#2a4a10' : '#1a3a6a');
+    const numColor = info.inactive ? '#333' : '#7ab4d4';
+    const satTxt   = sat > 0 ? `${sat}%` : '—';
+    const lblW     = Math.max(info.label.length * 5.8 + 18, 68);
+
+    // Línea conector
+    if (!info.inactive) {
+      if (y < LINE_Y) {
+        g.innerHTML += `<line x1="${cx}" y1="${y+24}" x2="${cx}" y2="${lineY2}" stroke="${borderCol}" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>`;
+      } else {
+        g.innerHTML += `<line x1="${cx}" y1="${y-24}" x2="${cx}" y2="${lineY2}" stroke="${borderCol}" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>`;
+      }
+    }
+
+    // Indicador lado
+    const ladoLabel = info.inactive ? '' : (lado === 'izq' ? '◀IZQ' : 'DER▶');
+    const ladoColor = lado === 'izq' ? '#00b4d8' : '#f4a261';
+
+    // Badge: Tacto arriba, descripción, num carga pequeño, saturación
+    g.innerHTML += `
+      <g class="carga-badge" onclick="openCarga('${num}')" id="badge-${num}" style="cursor:pointer">
+        <rect class="badge-bg" id="bg-${num}" x="${cx-lblW/2}" y="${y-28}" width="${lblW}" height="64" rx="5"
+          fill="${bgFill}" stroke="${borderCol}" stroke-width="1.5"/>
+        <text x="${cx}" y="${y-16}" text-anchor="middle" font-family="Share Tech Mono" font-size="10"
+          font-weight="bold" fill="${ladoColor}">${info.tacto}</text>
+        <text x="${cx}" y="${y-4}" text-anchor="middle" font-family="Rajdhani" font-size="9" font-weight="600"
+          fill="${info.inactive?'#333':'#e8f4fd'}">${info.label}</text>
+        <text x="${cx}" y="${y+8}" text-anchor="middle" font-family="Share Tech Mono" font-size="7"
+          fill="${numColor}">${num}</text>
+        <text x="${cx}" y="${y+19}" text-anchor="middle" font-family="Share Tech Mono" font-size="8"
+          fill="${satColor}" id="sat-txt-${num}">${satTxt}</text>
+        <text x="${cx}" y="${y+30}" text-anchor="middle" font-family="Share Tech Mono" font-size="7"
+          fill="${timeColor}">${maxTiempo > 0 ? maxTiempo.toFixed(3) : ''}</text>
+      </g>`;
+
+    // Etiqueta tacto encima/debajo
+    if (!info.inactive && posIdx === 0) {
+      const tactoY = y < LINE_Y ? y - 27 : y + 52;
+      g.innerHTML += `<text x="${cx}" y="${tactoY}" text-anchor="middle" font-family="Share Tech Mono" font-size="7" fill="#1e3a5f">${info.tacto}</text>`;
+    }
+  });
+}
+
+function updatePlantSat() {
+  Object.keys(TACTO_INFO).forEach(num => {
+    const c = cargaMap[num];
+    if (!c) return;
+    const sat = getMaxSat(c);
+    const color = getSatColor(sat);
+    const el = document.getElementById(`sat-txt-${num}`);
+    const bg = document.getElementById(`bg-${num}`);
+    if (el) { el.textContent = sat > 0 ? `${sat}%` : '—'; el.setAttribute('fill', color); }
+    if (bg && sat > 0) bg.setAttribute('stroke', color);
+  });
+}
+
+// ── ABRIR CARGA ───────────────────────────────────────────────────────
+function openCarga(num) {
+  // Aplicar color de fondo de carga
+  const cargaBg = localStorage.getItem('ml2_carga_bg');
+  const viewEl = document.getElementById('view-carga');
+  if (viewEl && cargaBg) viewEl.style.background = cargaBg;
+  try {
+  const c = cargaMap[num];
+  if (!c) { showToast('⚠ Carga no encontrada'); return; }
+  currentCarga = num;
+  clearSelOps();
+
+  document.getElementById('cv-title').textContent = `${c.num} — ${c.nombre}`;
+  const nOpsEfectivos = parseFloat(TACTO_INFO[num]?.ops || 1);
+  const tactoEfectivo = CONFIG.tacto * nOpsEfectivos;
+  document.getElementById('cv-sub').textContent = `${(c.ops||[]).length} operaciones · TPO Tacto ${tactoEfectivo.toFixed(3).replace('.',',')} min${nOpsEfectivos > 1 ? ' ('+nOpsEfectivos+' ops)' : ''}`;
+  // Mostrar ubicación actual
+  const info = TACTO_INFO[num];
+  if (info) {
+    const ladoTxt = info.lado === 'izq' ? '◀ IZQ' : 'DER ▶';
+    document.getElementById('cv-ubicacion').textContent = `${info.tacto} ${ladoTxt}`;
+  }
+
+  // Modelos con mix
+  renderModelosPanel(c);
+
+  // Tabla ops
+  // Usar exactamente las columnas del Excel para esta carga
+  const cols = c.cols || [];
+  const thead = document.getElementById('cv-thead');
+  const tbody = document.getElementById('cv-tbody');
+
+  thead.innerHTML = '';
+  const headerRow = document.createElement('tr');
+
+  // Columna handle drag (vacía)
+  const thHandle = document.createElement('th');
+  thHandle.style.width = '20px';
+  thHandle.style.minWidth = '20px';
+  headerRow.appendChild(thHandle);
+
+  // Columnas fijas
+  const thPr = document.createElement('th');
+  thPr.style.width = '90px';
+  thPr.textContent = 'Nº OP';
+  headerRow.appendChild(thPr);
+
+  const thDesc = document.createElement('th');
+  thDesc.textContent = 'DESCRIPCIÓN DEL DESARROLLO';
+  headerRow.appendChild(thDesc);
+
+  // Columnas de modelo — arrastrables
+  cols.forEach(col => {
+    const th = document.createElement('th');
+    th.className = 'time-col draggable-col';
+    th.dataset.col = col;
+    th.draggable = true;
+    th.style.color = COL_COLORS[col] || '#aaa';
+    th.style.cursor = 'grab';
+    th.style.userSelect = 'none';
+    th.innerHTML = `<span style="margin-right:4px;opacity:0.4;font-size:9px">⠿</span>${col}`;
+
+    th.addEventListener('dragstart', e => {
+      _draggingCol = true;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', col);
+      th.style.opacity = '0.4';
+    });
+    th.addEventListener('dragend', () => {
+      _draggingCol = false;
+      th.style.opacity = '';
+      thead.querySelectorAll('th.draggable-col').forEach(t => {
+        t.style.borderLeft = '';
+      });
+    });
+    th.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      thead.querySelectorAll('th.draggable-col').forEach(t => {
+        t.style.borderLeft = '';
+        t.style.borderRight = '';
+      });
+      th.style.borderLeft = '2px solid var(--accent)';
+    });
+    th.addEventListener('dragleave', () => {
+      th.style.borderLeft = '';
+    });
+    th.addEventListener('drop', e => {
+      e.preventDefault();
+      th.style.borderLeft = '';
+      const srcCol = e.dataTransfer.getData('text/plain');
+      if (!srcCol || srcCol === col) return;
+
+      const liveCarga = cargaMap[currentCarga];
+      const colsArr = liveCarga.cols;
+      const srcIdx = colsArr.indexOf(srcCol);
+      const dstIdx = colsArr.indexOf(col);
+      if (srcIdx === -1 || dstIdx === -1) return;
+
+      // Reordenar cols
+      colsArr.splice(srcIdx, 1);
+      colsArr.splice(dstIdx, 0, srcCol);
+
+      // Refrescar vista
+      openCarga(currentCarga);
+    });
+
+    headerRow.appendChild(th);
+  });
+
+  thead.appendChild(headerRow);
+
+  tbody.innerHTML = '';
+  if (!c.ops || c.ops.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="${2+cols.length}" style="text-align:center;color:var(--gray);padding:20px">Sin operaciones</td></tr>`;
+  } else {
+    c.ops.forEach(op => {
+      const timeCells = cols.map(col => {
+        const v = op[col];
+        return v !== null && v !== undefined
+          ? `<td class="time-cell has-val" style="color:${COL_COLORS[col]||'#06d6a0'}">${(parseFloat(v)||0).toFixed(3)}</td>`
+          : `<td class="time-cell no-val">—</td>`;
+      }).join('');
+
+      const tr = document.createElement('tr');
+      const opIsPending = isPendingOp(c.num, op.pr);
+      const opIsError   = isErrorOp(c.num, op.pr);
+      // Op existe en Excel2 → marcar amarillo para indicar que viene del Excel2
+      const opInExcel2  = EXCEL2_LOADED && !!EXCEL2_OPS[op.pr];
+      tr.className = 'op-row' +
+        (opIsPending ? ' op-pending' : '') +
+        (opIsError   ? ' op-error'   : '') +
+        (opInExcel2  ? ' op-excel2'  : '');
+      tr.dataset.pr = op.pr;
+      const descPreview = op.desc && op.desc.length > 35 ? op.desc.substring(0,33)+'…' : (op.desc||'');
+      tr.innerHTML = `<td class="drag-handle" title="Arrastrar para reordenar">⠿</td><td class="pr-cell"><span class="error-dot${isErrorOp(c.num, op.pr) ? ' active' : ''}" title="Marcar como error"></span>${op.pr}</td><td class="desc-cell" title="Clic para ver completo" onclick="mostrarDescCompleta('${op.pr}','${(op.desc||'').replace(/'/g,"'")}')" style="cursor:pointer">${descPreview}</td>${timeCells}`;
+
+      // Clic simple → selección o info Excel2
+      tr.addEventListener('click', (e) => {
+        if (e.target.classList.contains('time-inline-input')) return;
+        if (e.target.classList.contains('time-cell')) return;
+        if (e.target.classList.contains('desc-cell')) return;
+        if (e.target.classList.contains('error-dot')) return;
+        // Si op está en Excel2 → mostrar modal al clicar en PR
+        if (tr.classList.contains('op-excel2') && e.target.classList.contains('pr-cell')) {
+          mostrarInfoExcel2(op.pr);
+          return;
+        }
+        toggleSelOp(op.pr, tr);
+      });
+
+      // Clic en el punto → marcar/desmarcar como error
+      const dot = tr.querySelector('.error-dot');
+      if (dot) dot.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleErrorOp(c.num, op.pr, tr);
+        dot.classList.toggle('active', isErrorOp(c.num, op.pr));
+      });
+
+      // Doble clic en descripción o PR → modal
+      tr.querySelector('td.desc-cell').addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        clearSelOps();
+        openEnviar([op]);
+      });
+      tr.querySelector('td.pr-cell').addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        clearSelOps();
+        openEnviar([op]);
+      });
+
+      // Doble clic en celda de tiempo → edición inline
+      tr.querySelectorAll('td.time-cell').forEach((td, ci) => {
+        td.addEventListener('dblclick', (e) => {
+          e.stopPropagation();
+          const col = cols[ci];
+          if (!col) return;
+          // Celda vacía y no es TODOS → rellenar con TODOS (si tiene valor)
+          if (col !== 'TODOS' && (op[col] == null || op[col] === '')) {
+            const todosVal = parseFloat(op['TODOS']);
+            if (!isNaN(todosVal) && todosVal > 0) {
+              op[col] = todosVal;
+              td.textContent = todosVal.toFixed(3);
+              td.className = 'time-cell has-val';
+              td.style.color = COL_COLORS[col] || '#06d6a0';
+              updateTotalRow(c);
+              autoguardar();
+              return;
+            }
+            // Si TODOS no tiene valor, abrir editor inline para escribir manualmente
+          }
+          // Celda con valor o sin TODOS → edición inline
+          startInlineEdit(td, op, col, c);
+        });
+      });
+
+      tbody.appendChild(tr);
+    });
+
+    // Fila TOTAL
+    const safeTotales = c.totales || {};
+  const totCols = cols.map(col => {
+      // Usar totales del AP021101 si están disponibles, si no sumar ops
+      const total = (safeTotales && safeTotales[col] != null)
+        ? c.totales[col]
+        : c.ops.reduce((s, o) => s + (o[col] || 0), 0);
+      const color = COL_COLORS[col] || '#aaa';
+      const totalNum = parseFloat(total) || 0;
+      return `<td class="time-cell" style="color:${color};font-weight:700;font-size:11px">${totalNum > 0 ? totalNum.toFixed(3) : '—'}</td>`;
+    }).join('');
+
+    const trTotal = document.createElement('tr');
+    trTotal.id = 'cv-total-row';
+    trTotal.style.cssText = 'background:var(--bg2);position:sticky;bottom:0;z-index:2;border-top:2px solid var(--accent2)';
+    trTotal.innerHTML = `
+      <td class="drag-handle"></td>
+      <td class="pr-cell" style="color:var(--accent);font-weight:700;font-size:10px;letter-spacing:1px">TOTAL</td>
+      <td class="desc-cell" style="color:var(--gray);font-size:9px;letter-spacing:1px">${c.n_ops} OPERACIONES</td>
+      ${totCols}`;
+    tbody.appendChild(trTotal);
+  }
+
+  // Drag & drop para reordenar filas
+  initRowDrag(tbody, c);
+
+  // Marcar ops del Excel2 que NO están en esta carga (mismo número de carga)
+  if (EXCEL2_LOADED) {
+    Object.entries(EXCEL2_OPS).forEach(([pr, info]) => {
+      if (info.carga !== c.num) return; // solo las de la misma carga
+      if (c.ops.some(o => o.pr === pr)) return; // ya existe en dashboard
+      // Añadir fila amarilla indicando que falta
+      const trMissing = document.createElement('tr');
+      trMissing.className = 'op-row op-excel2';
+      trMissing.style.opacity = '0.7';
+      const descP = info.desc && info.desc.length > 35 ? info.desc.substring(0,33)+'…' : (info.desc||'');
+      trMissing.innerHTML = `
+        <td class="drag-handle" style="color:var(--yellow)">⚠</td>
+        <td class="pr-cell" style="cursor:pointer" title="Clic para ver info"
+            onclick="mostrarInfoExcel2('${pr}')">${pr}</td>
+        <td class="desc-cell" style="color:var(--yellow)">${descP} <em style="font-size:9px;opacity:0.7">(solo en Excel 2)</em></td>
+        <td class="time-cell has-val" style="color:var(--yellow)">${info.tiempo !== null ? info.tiempo.toFixed(3) : '—'}</td>
+      `;
+      tbody.appendChild(trMissing);
+    });
+  }
+
+  // Barra de pendientes
+  renderPendingBar(c);
+
+  // Cambiar vista
+  document.getElementById('view-plant').classList.remove('active');
+  document.getElementById('view-carga').classList.add('active');
+  } catch(e) {
+    console.error('Error abriendo carga', num, e);
+    showToast('⚠ Error al abrir carga: ' + e.message);
+  }
+}
+
+function goBack() {
+  document.getElementById('view-carga').classList.remove('active');
+  document.getElementById('view-plant').classList.add('active');
+  updatePlantSat();
+}
+
+// ── MODAL ENVIAR ──────────────────────────────────────────────────────
+let selectedOpPrs = new Set();
+
+function toggleSelOp(pr, tr) {
+  if (selectedOpPrs.has(pr)) {
+    selectedOpPrs.delete(pr);
+    tr.classList.remove('selected-op');
+  } else {
+    selectedOpPrs.add(pr);
+    tr.classList.add('selected-op');
+  }
+  updateSelCount();
+}
+
+function clearSelOps() {
+  selectedOpPrs.clear();
+  document.querySelectorAll('tr.op-row.selected-op').forEach(r => r.classList.remove('selected-op'));
+  updateSelCount();
+}
+
+function updateSelCount() {
+  const n = selectedOpPrs.size;
+  const countEl  = document.getElementById('sel-count');
+  const btnSend  = document.getElementById('btn-send-sel');
+  const btnClear = document.getElementById('btn-clear-sel');
+  if (n === 0) {
+    countEl.textContent = 'Clic para seleccionar · Doble clic para enviar una';
+    countEl.style.color = 'var(--gray)';
+    btnSend.classList.remove('visible');
+    btnClear.classList.remove('visible');
+  } else {
+    countEl.textContent = `${n} operación${n>1?'es':''} seleccionada${n>1?'s':''}`;
+    countEl.style.color = 'var(--yellow)';
+    btnSend.classList.add('visible');
+    btnClear.classList.add('visible');
+  }
+}
+
+function openEnviarMultiple() {
+  const c = cargaMap[currentCarga];
+  const ops = c.ops.filter(o => selectedOpPrs.has(o.pr));
+  if (ops.length === 0) return;
+  openEnviar(ops);
+}
+
+
+function renderTimesEditor(opsArr, c) {
+  const editor = document.getElementById('times-editor');
+  const isSingle = opsArr.length === 1;
+  editor.innerHTML = '';
+
+  if (!isSingle) {
+    (c.cols || []).forEach(col => {
+      const total = opsArr.reduce((s,o) => s + (o[col]||0), 0);
+      if (total > 0) {
+        editor.innerHTML += `<div class="time-edit-row" style="cursor:default">
+          <span class="drag-handle" style="visibility:hidden">⠿</span>
+          <span class="time-edit-col" style="color:${COL_COLORS[col]||'#aaa'}">${col}</span>
+          <span style="font-family:'Share Tech Mono';font-size:13px;color:${COL_COLORS[col]||'#aaa'}">${total.toFixed(3)}</span>
+        </div>`;
+      }
+    });
+    return;
+  }
+
+  const op = opsArr[0];
+  const liveCarga = cargaMap[currentCarga];
+  const cols = liveCarga.cols || [];
+  let dragSrc = null;
+
+  cols.forEach(col => {
+    const v = op[col];
+    const hasVal = v != null;
+    const color = COL_COLORS[col] || '#aaa';
+
+    const row = document.createElement('div');
+    row.className = 'time-edit-row';
+    row.draggable = true;
+    row.dataset.col = col;
+
+    row.innerHTML = `
+      <span class="drag-handle" title="Arrastra para reordenar">⠿</span>
+      <span class="time-edit-col" style="color:${color}">${col}</span>
+      <input class="time-edit-input${hasVal?'':' empty'}"
+             type="number" step="0.001" min="0"
+             data-col="${col}"
+             value="${hasVal ? v.toFixed(3) : ''}"
+             placeholder="—"
+             oninput="this.classList.toggle('empty',!this.value)">
+      ${hasVal
+        ? `<button class="btn-clear-time" onclick="clearModelTime('${col}')">✕ borrar</button>`
+        : `<span style="font-size:9px;color:var(--gray)">vacío</span>`}
+    `;
+
+    // Drag events
+    row.addEventListener('dragstart', e => {
+      dragSrc = row;
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', col);
+    });
+    row.addEventListener('dragend', () => {
+      row.classList.remove('dragging');
+      editor.querySelectorAll('.time-edit-row[data-col]').forEach(r => r.classList.remove('drag-over'));
+      dragSrc = null;
+    });
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (dragSrc && row !== dragSrc) {
+        editor.querySelectorAll('.time-edit-row[data-col]').forEach(r => r.classList.remove('drag-over'));
+        row.classList.add('drag-over');
+      }
+    });
+    row.addEventListener('dragleave', () => {
+      row.classList.remove('drag-over');
+    });
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      row.classList.remove('drag-over');
+      if (!dragSrc || dragSrc === row) return;
+      // Reordenar en DOM
+      const allRows = [...editor.querySelectorAll('.time-edit-row[data-col]')];
+      const srcIdx = allRows.indexOf(dragSrc);
+      const dstIdx = allRows.indexOf(row);
+      if (srcIdx < dstIdx) editor.insertBefore(dragSrc, row.nextSibling);
+      else editor.insertBefore(dragSrc, row);
+      // Actualizar c.cols según nuevo orden visual
+      const newOrder = [...editor.querySelectorAll('.time-edit-row[data-col]')].map(r => r.dataset.col);
+      liveCarga.cols = newOrder;
+      showToast('✓ Orden actualizado');
+    });
+
+    editor.appendChild(row);
+  });
+
+  // Añadir modelo nuevo
+  const existingCols = new Set(cols);
+  const allCols = ['Formentor','CUPRA León','SEAT León','MHEV','PHEV','Gasolina','Diesel','GD','VZ5'];
+  const newCols = allCols.filter(x => !existingCols.has(x));
+  if (newCols.length > 0) {
+    const addRow = document.createElement('div');
+    addRow.className = 'time-edit-add';
+    addRow.innerHTML = `
+      <select id="new-col-select">
+        <option value="">+ Añadir modelo...</option>
+        ${newCols.map(x => `<option value="${x}" style="color:${COL_COLORS[x]||'#aaa'}">${x}</option>`).join('')}
+      </select>
+      <input class="new-col-val" type="number" step="0.001" min="0" id="new-col-val" placeholder="0.000">
+      <button class="btn-add-time" onclick="addModelTime()">+ AÑADIR</button>
+    `;
+    editor.appendChild(addRow);
+  }
+}
+
+function clearModelTime(col) {
+  if (!pendingOp || !Array.isArray(pendingOp) || pendingOp.length !== 1) return;
+  const op = pendingOp[0];
+  const c  = cargaMap[currentCarga];
+  op[col] = null;
+  // Recalcular totales
+  c.totales = {};
+  (c.cols || []).forEach(k => {
+    const vals = c.ops.map(o => o[k]).filter(v => v !== null && v !== undefined);
+    if (vals.length > 0) c.totales[k] = Math.round(vals.reduce((a,b)=>a+b,0)*1000)/1000;
+  });
+  renderTimesEditor(pendingOp, c);
+  showToast(`✓ Tiempo ${col} eliminado`);
+}
+
+function addModelTime() {
+  if (!pendingOp || !Array.isArray(pendingOp) || pendingOp.length !== 1) return;
+  const op  = pendingOp[0];
+  const c   = cargaMap[currentCarga];
+  const col = document.getElementById('new-col-select').value;
+  const val = parseFloat(document.getElementById('new-col-val').value);
+  if (!col) { showToast('⚠ Selecciona un modelo'); return; }
+  if (isNaN(val) || val < 0) { showToast('⚠ Tiempo inválido'); return; }
+
+  op[col] = Math.round(val * 1000) / 1000;
+  if (!c.cols.includes(col)) c.cols.push(col);
+  // Recalcular totales
+  c.totales = {};
+  (c.cols || []).forEach(k => {
+    const vals = c.ops.map(o => o[k]).filter(v => v !== null && v !== undefined);
+    if (vals.length > 0) c.totales[k] = Math.round(vals.reduce((a,b)=>a+b,0)*1000)/1000;
+  });
+  renderTimesEditor(pendingOp, c);
+  showToast(`✓ ${col}: ${val.toFixed(3)} min añadido`);
+}
+
+function guardarTiemposEditados() {
+  if (!pendingOp || !Array.isArray(pendingOp) || pendingOp.length !== 1) return;
+  const op = pendingOp[0];
+  const c  = cargaMap[currentCarga];
+  // Leer todos los inputs del editor
+  document.querySelectorAll('.time-edit-input[data-col]').forEach(input => {
+    const col = input.dataset.col;
+    const val = parseFloat(input.value);
+    op[col] = (!isNaN(val) && val > 0) ? Math.round(val*1000)/1000 : null;
+  });
+  // Recalcular totales
+  c.totales = {};
+  (c.cols || []).forEach(col => {
+    const vals = c.ops.map(o => o[col]).filter(v => v !== null && v !== undefined);
+    if (vals.length > 0) c.totales[col] = Math.round(vals.reduce((a,b)=>a+b,0)*1000)/1000;
+  });
+}
+
+
+function startInlineEdit(td, op, col, c) {
+  if (td._editing) return;
+  td._editing = true;
+
+  const curVal = op[col] != null ? (parseFloat(op[col])||0).toFixed(3) : '';
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.step = '0.001';
+  input.min = '0';
+  input.className = 'time-inline-input';
+  input.value = curVal;
+  input.placeholder = '0.000';
+  td.classList.add('editing');
+  td.textContent = '';
+  td.appendChild(input);
+  input.focus();
+  input.select();
+
+  function commit(newVal) {
+    if (!td._editing) return;
+    td._editing = false;
+    input.onblur = null;
+
+    // Usar siempre la referencia viva del cargaMap
+    const liveCarga = cargaMap[currentCarga];
+    const liveOp = liveCarga.ops.find(o => o.pr === op.pr);
+    if (liveOp) liveOp[col] = newVal;
+
+    // Recalcular totales desde cero
+    liveCarga.totales = {};
+    (liveCarga.cols || []).forEach(k => {
+      const vals = liveCarga.ops.map(o => o[k]).filter(v => v != null);
+      if (vals.length > 0)
+        liveCarga.totales[k] = Math.round(vals.reduce((a,b)=>a+b,0)*1000)/1000;
+    });
+
+    // Actualizar celda
+    td.classList.remove('editing');
+    td.textContent = '';
+    if (newVal != null) {
+      td.textContent = newVal.toFixed(3);
+      td.className = 'time-cell has-val';
+      td.style.color = COL_COLORS[col] || '#06d6a0';
+    } else {
+      td.textContent = '—';
+      td.className = 'time-cell no-val';
+      td.style.color = '';
+    }
+
+    // Actualizar fila TOTAL
+    updateTotalRow(liveCarga);
+    renderModelos(liveCarga);
+    updatePlantSat();
+  }
+
+  input.onkeydown = function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      const raw = input.value.trim();
+      let newVal = null;
+      if (raw !== '') {
+        const parsed = parseFloat(raw);
+        if (!isNaN(parsed) && parsed >= 0) newVal = Math.round(parsed*1000)/1000;
+      }
+      commit(newVal);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      td._editing = false;
+      input.onblur = null;
+      td.classList.remove('editing');
+      td.textContent = op[col] != null ? op[col].toFixed(3) : '—';
+      td.className = op[col] != null ? 'time-cell has-val' : 'time-cell no-val';
+    }
+  };
+
+  input.onblur = function() {
+    if (!td._editing) return;
+    const raw = input.value.trim();
+    let newVal = null;
+    if (raw !== '') {
+      const parsed = parseFloat(raw);
+      if (!isNaN(parsed) && parsed >= 0) newVal = Math.round(parsed*1000)/1000;
+    }
+    commit(newVal);
+  };
+}
+
+function updateTotalRow(c) {
+  const cols = c.cols || [];
+  const totalRow = document.getElementById('cv-total-row');
+  if (!totalRow) {
+    // Si no existe la fila TOTAL, reconstruir la tabla entera
+    openCarga(currentCarga);
+    return;
+  }
+  const tds = totalRow.querySelectorAll('td');
+  cols.forEach((col, i) => {
+    const td = tds[i + 3];
+    if (!td) return;
+    // Sumar todos los valores numéricos, ignorar null/undefined
+    const total = Math.round(
+      c.ops.reduce((s, o) => {
+        const v = o[col];
+        return s + (v != null ? v : 0);
+      }, 0) * 1000
+    ) / 1000;
+    td.textContent = (parseFloat(total)||0).toFixed(3);
+    td.style.color = COL_COLORS[col] || '#aaa';
+    td.style.fontWeight = '700';
+  });
+  updatePlantSat();
+}
+
+function openEnviar(ops) {
+  // ops puede ser array o single op (compatibilidad)
+  const opsArr = Array.isArray(ops) ? ops : [ops];
+  pendingOp = opsArr;
+  selectedDest = null;
+
+  const c = cargaMap[currentCarga];
+  document.getElementById('m-origen').textContent = `${c.num} — ${c.nombre}`;
+
+  if (opsArr.length === 1) {
+    document.getElementById('m-op-pr').textContent = opsArr[0].pr;
+    document.getElementById('m-op-desc').textContent = opsArr[0].desc;
+  } else {
+    document.getElementById('m-op-pr').textContent = `${opsArr.length} operaciones`;
+    document.getElementById('m-op-desc').textContent = opsArr.map(o => o.pr).join(', ');
+  }
+
+  // Editor de tiempos por modelo
+  renderTimesEditor(opsArr, c);
+
+  // Grid de cargas destino
+  const grid = document.getElementById('m-carga-grid');
+  grid.innerHTML = '';
+  CARGAS.filter(x => x.num !== currentCarga).forEach(dest => {
+    const sat = getMaxSat(dest);
+    const satColor = getSatColor(sat);
+    const div = document.createElement('div');
+    div.className = 'carga-opt';
+    div.dataset.num = dest.num;
+    div.innerHTML = `
+      <div class="carga-opt-num">${dest.num}</div>
+      <div class="carga-opt-name">${dest.nombre}</div>
+      <div class="carga-opt-sat" style="color:${satColor}">${sat > 0 ? sat+'% sat' : 'sin datos'}</div>`;
+    div.onclick = () => {
+      document.querySelectorAll('.carga-opt').forEach(d => d.classList.remove('selected'));
+      div.classList.add('selected');
+      selectedDest = dest.num;
+    };
+    grid.appendChild(div);
+  });
+
+  // Resetear filtro de equipo — ocultar todas hasta elegir
+  if (typeof currentEqFilter !== "undefined") currentEqFilter = null;
+  document.querySelectorAll('.eq-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.carga-opt').forEach(d => d.style.display = 'none');
+
+  // Rellenar nombre guardado
+  const inputNombre = document.getElementById('m-nombre-supervisor');
+  if (inputNombre) inputNombre.value = localStorage.getItem('ml2_supervisor') || '';
+
+  document.getElementById('modal-enviar').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-enviar').classList.remove('open');
+  pendingOp = null;
+  selectedDest = null;
+}
+
+function guardarYCerrar() {
+  guardarTiemposEditados();
+  const c = cargaMap[currentCarga];
+  recalcTotales(c);
+  closeModal();
+  clearSelOps();
+  // Refrescar vista completa
+  openCarga(currentCarga);
+  autoguardar();
+  showToast('✓ Cambios guardados');
+}
+
+// Refrescar solo la tabla de ops sin reabrir todo
+function refreshOpsTable(c) {
+  const cols = c.cols || [];
+  // Actualizar cabecera
+  const thead = document.getElementById('cv-thead');
+  if (thead) {
+    thead.innerHTML = `<tr>
+      <th style="width:90px">Nº OP</th>
+      <th>DESCRIPCIÓN DEL DESARROLLO</th>
+      ${cols.map(col => `<th class="time-col" style="color:${COL_COLORS[col]||'#aaa'}">${col}</th>`).join('')}
+    </tr>`;
+  }
+  // Actualizar cada fila
+  const tbody = document.getElementById('cv-tbody');
+  if (!tbody) return;
+  const rows = tbody.querySelectorAll('tr.op-row');
+  rows.forEach(tr => {
+    const pr = tr.dataset.pr;
+    const op = c.ops.find(o => o.pr === pr);
+    if (!op) return;
+    // Actualizar celdas de tiempo (desde columna 3 en adelante)
+    const tds = tr.querySelectorAll('td');
+    cols.forEach((col, i) => {
+      const td = tds[i + 2];
+      if (!td) return;
+      const v = op[col];
+      if (v !== null && v !== undefined) {
+        td.textContent = (parseFloat(v)||0).toFixed(3);
+        td.className = 'time-cell has-val';
+        td.style.color = COL_COLORS[col] || '#06d6a0';
+      } else {
+        td.textContent = '—';
+        td.className = 'time-cell no-val';
+        td.style.color = '';
+      }
+    });
+  });
+  // Actualizar fila TOTAL
+  const totalRow = tbody.querySelector('tr:last-child');
+  if (totalRow && totalRow.querySelector('td')?.textContent === 'TOTAL') {
+    const tds = totalRow.querySelectorAll('td');
+    cols.forEach((col, i) => {
+      const td = tds[i + 2];
+      if (!td) return;
+      const total = c.ops.reduce((s, o) => s + (o[col] || 0), 0);
+      if (total > 0) {
+        td.textContent = total.toFixed(3);
+        td.style.color = COL_COLORS[col] || '#aaa';
+      } else {
+        td.textContent = '—';
+      }
+    });
+  }
+  // Actualizar panel de modelos
+  renderModelos(c);
+}
+
+function confirmarEliminar() {
+  if (!pendingOp || pendingOp.length === 0) return;
+  // Si solo hay 1 op y hay ediciones pendientes de tiempos, guardar antes
+  guardarTiemposEditados();
+  const opsToDelete = Array.isArray(pendingOp) ? pendingOp : [pendingOp];
+  const src = cargaMap[currentCarga];
+  let deleted = 0;
+
+  opsToDelete.forEach(op => {
+    const idx = src.ops.findIndex(o => o.pr === op.pr);
+    if (idx !== -1) {
+      src.ops.splice(idx, 1);
+      deleted++;
+    }
+  });
+
+  src.n_ops = src.ops.length;
+
+  // Recalcular totales
+  src.totales = {};
+  (src.cols || []).forEach(col => {
+    const vals = src.ops.map(o => o[col]).filter(v => v !== null && v !== undefined);
+    if (vals.length > 0) src.totales[col] = Math.round(vals.reduce((a,b)=>a+b,0)*1000)/1000;
+  });
+
+  closeModal();
+  clearSelOps();
+  // Refrescar vista completa con totales actualizados
+  openCarga(currentCarga);
+  updatePlantSat();
+  autoguardar();
+  showToast(`🗑 ${deleted} op${deleted>1?'s':''} eliminada${deleted>1?'s':''}`)
+}
+
+function confirmarEnvio() {
+  if (!selectedDest) { showToast('⚠ Selecciona una carga destino'); return; }
+  if (!pendingOp || pendingOp.length === 0) return;
+  const nombreSup = document.getElementById('m-nombre-supervisor')?.value.trim();
+  if (!nombreSup) { showToast('⚠ Introduce tu nombre y apellido'); return; }
+  localStorage.setItem('ml2_supervisor', nombreSup);
+  // Guardar ediciones de tiempos antes de enviar
+  guardarTiemposEditados();
+
+  const src = cargaMap[currentCarga];
+  const dst = cargaMap[selectedDest];
+  const opsToMove = Array.isArray(pendingOp) ? pendingOp : [pendingOp];
+  let moved = 0;
+
+  const srcCarga = currentCarga;
+  opsToMove.forEach(op => {
+    const idx = src.ops.findIndex(o => o.pr === op.pr);
+    if (idx !== -1) {
+      const [removed] = src.ops.splice(idx, 1);
+      dst.ops.push(removed);
+      moved++;
+      // Marcar como pendiente en la carga destino
+      removed._solicitadoPor = nombreSup;
+      addPendingOp(selectedDest, removed, srcCarga);
+      // Si la op tiene columnas que no están en dst.cols, añadirlas
+      Object.keys(removed).forEach(col => {
+        if (col === 'pr' || col === 'desc') return;
+        if (removed[col] !== null && removed[col] !== undefined && !(dst.cols||[]).includes(col)) {
+          dst.cols = dst.cols || [];
+          dst.cols.push(col);
+        }
+      });
+    }
+  });
+
+  src.n_ops = src.ops.length;
+  dst.n_ops = dst.ops.length;
+
+  // Recalcular totales src
+  src.totales = {};
+  (src.cols || []).forEach(col => {
+    const vals = src.ops.map(o => o[col]).filter(v => v !== null && v !== undefined);
+    if (vals.length > 0) src.totales[col] = Math.round(vals.reduce((a,b)=>a+b,0)*1000)/1000;
+  });
+
+  // Recalcular totales dst — incluir TODOS siempre
+  dst.totales = {};
+  const dstCols = new Set([...(dst.cols || []), 'TODOS']);
+  dstCols.forEach(col => {
+    const vals = dst.ops.map(o => o[col]).filter(v => v !== null && v !== undefined).map(v => parseFloat(v)||0);
+    if (vals.length > 0) dst.totales[col] = Math.round(vals.reduce((a,b)=>a+b,0)*1000)/1000;
+  });
+  // Asegurar que TODOS existe en dst.cols
+  if (!(dst.cols || []).includes('TODOS')) dst.cols = ['TODOS', ...(dst.cols || [])];
+
+  // Recalcular totales src — incluir TODOS
+  src.totales = {};
+  const srcCols = new Set([...(src.cols || []), 'TODOS']);
+  srcCols.forEach(col => {
+    const vals = src.ops.map(o => o[col]).filter(v => v !== null && v !== undefined).map(v => parseFloat(v)||0);
+    if (vals.length > 0) src.totales[col] = Math.round(vals.reduce((a,b)=>a+b,0)*1000)/1000;
+  });
+
+  src.n_ops = src.ops.length;
+  dst.n_ops = dst.ops.length;
+
+  closeModal();
+  clearSelOps();
+  openCarga(currentCarga);
+  updatePlantSat();
+  autoguardar();
+  showToast(`✓ ${moved} op${moved>1?'s':''} → Carga ${selectedDest}`);
+}
+
+// ── EXCEL LOADER ──────────────────────────────────────────────────────
+let _draggingCol = false;
+let _draggingRow = false;
+document.addEventListener('dragover', e => {
+  if (_draggingCol || _draggingRow) return; // drag interno → no mostrar overlay Excel
+  e.preventDefault();
+  document.getElementById('drop-overlay').classList.add('active');
+});
+document.addEventListener('dragleave', e => {
+  if (_draggingCol || _draggingRow) return;
+  if (!e.relatedTarget) document.getElementById('drop-overlay').classList.remove('active');
+});
+document.addEventListener('drop', e => {
+  if (_draggingCol) return; // columna de tabla → no procesar como Excel
+  e.preventDefault();
+  document.getElementById('drop-overlay').classList.remove('active');
+  const file = e.dataTransfer?.files[0];
+  if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) processExcel(file);
+  else showToast('⚠ Sube un archivo .xlsx');
+});
+function loadExcel(input) { const f = input.files[0]; if (f) processExcel(f); input.value=''; }
+
+function processExcel(file) {
+  const loader = document.getElementById('loader-overlay');
+  const msg    = document.getElementById('loader-msg');
+  loader.classList.add('active');
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      msg.textContent = 'Procesando hojas...';
+      const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+      const delExcel = [];
+
+      wb.SheetNames.forEach(sn => {
+        if (sn.includes('✎')) return;
+        const ws   = wb.Sheets[sn];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+        if (rows.length < 3) return;
+        const hdrs = rows[1];
+        if (!hdrs) return;
+        const modCols = [];
+        for (let ci = 2; ci < hdrs.length; ci++) {
+          if (hdrs[ci] && String(hdrs[ci]).trim()) modCols.push(String(hdrs[ci]).trim());
+        }
+        if (!modCols.length) return;
+        const titulo = rows[0]?.[0] ? String(rows[0][0]) : sn;
+        const mNum   = titulo.match(/\b(\d{4})\b/) || sn.match(/^(\d{4})/);
+        const num    = mNum ? mNum[1] : sn.split(' ')[0];
+        const nombre = titulo.replace(/CARGA\s*\d+\s*[—-]\s*/i,'').trim() || sn.replace(/^\d+\s*/,'').trim();
+
+        // Leer tacto de celda C1 (puede estar en distintas posiciones)
+        let tacto = null;
+        const row0 = rows[0] || [];
+        for (let ci = 0; ci < row0.length; ci++) {
+          try {
+            if (!row0[ci]) continue;
+            const mT = String(row0[ci]).match(/Tpo[.\s]Tacto[:\s]+([\d,.]+)/i);
+            if (mT) { tacto = parseFloat(mT[1].replace(',','.')); break; }
+          } catch(te) {}
+        }
+        const opsExcel = [];
+        for (let ri = 2; ri < rows.length; ri++) {
+          const row = rows[ri];
+          if (!row?.[0]) continue;
+          const prVal = String(row[0]).trim();
+          if (!prVal || prVal === 'TOTAL' || prVal === 'Total') continue;
+          const op = {pr: prVal, desc: String(row[1] || '').trim()};
+          modCols.forEach((col, ci) => {
+            const v = row[ci + 2];
+            op[col] = (v !== null && v !== undefined && v !== '') ? Math.round(parseFloat(v) * 1000) / 1000 : null;
+          });
+          opsExcel.push(op);
+        }
+        if (!opsExcel.length) return;
+        delExcel.push({num, nombre, opsExcel, modCols});
+      });
+
+      if (!delExcel.length) {
+        loader.classList.remove('active');
+        showToast('⚠ No se encontraron cargas en el Excel');
+        return;
+      }
+
+      // ── DETECTAR ESCENARIO POR TACTO ─────────────────────────────
+      // Leer el tacto de la primera carga del Excel
+      const primerTacto = delExcel[0]?.tacto;
+      let escDestino = ESCENARIO_ACTIVO;
+      if (primerTacto !== null && primerTacto !== undefined) {
+        escDestino = primerTacto <= 1.5 ? 'A' : 'B';
+        if (escDestino !== ESCENARIO_ACTIVO) {
+          // Cambiar automáticamente al escenario correcto
+          document.getElementById('esc-a-btn').classList.toggle('active', escDestino === 'A');
+          document.getElementById('esc-b-btn').classList.toggle('active', escDestino === 'B');
+          ESCENARIO_ACTIVO = escDestino;
+          localStorage.setItem('ml2_escenario', escDestino);
+          CONFIG.tacto = escDestino === 'A' ? 1.090 : 2.140;
+        }
+      }
+
+      // ── REEMPLAZAR COMPLETAMENTE las cargas del escenario activo ──
+      CARGAS.length = 0;
+      Object.keys(cargaMap).forEach(k => delete cargaMap[k]);
+
+      delExcel.forEach(({num, nombre, opsExcel, modCols}) => {
+        const colsOrdenadas = modCols.filter(c => c !== 'TODOS').concat(['TODOS']);
+        const totales = {};
+        colsOrdenadas.forEach(col => totales[col] = 0);
+        const ops = opsExcel.map(op => {
+          const newOp = {pr: op.pr, desc: op.desc};
+          colsOrdenadas.forEach(col => {
+            newOp[col] = op[col] !== undefined ? op[col] : null;
+            if (newOp[col]) totales[col] = Math.round(((totales[col]||0) + newOp[col]) * 1000) / 1000;
+          });
+          return newOp;
+        });
+        const id = `${num} ${nombre}`.substring(0, 28);
+        const c  = {id, num, nombre, cols: colsOrdenadas, ops, totales, n_ops: ops.length};
+        CARGAS.push(c);
+        cargaMap[num] = c;
+      });
+
+      CARGAS.sort((a, b) => parseInt(a.num) - parseInt(b.num));
+
+      // Guardar en store del escenario activo
+      if (ESCENARIO_ACTIVO === 'B') {
+        CARGAS_STORE.B = JSON.parse(JSON.stringify(CARGAS));
+        localStorage.setItem('ML2_CARGAS_B', JSON.stringify(CARGAS_STORE.B));
+      } else {
+        CARGAS_STORE.A = JSON.parse(JSON.stringify(CARGAS));
+        localStorage.setItem('ML2_CARGAS_A', JSON.stringify(CARGAS_STORE.A));
+      }
+
+      // Limpiar estado del escenario activo (pendientes, mix) para empezar limpio
+      Object.keys(PENDING_OPS).forEach(k => delete PENDING_OPS[k]);
+      Object.keys(MIX_DATA).forEach(k => delete MIX_DATA[k]);
+
+      setTimeout(() => {
+        buildPlant();
+        updatePlantSat();
+        document.getElementById('hdr-cargas').textContent = CARGAS.length;
+        loader.classList.remove('active');
+        autoguardar();
+        const tactoInfo = primerTacto ? ` (${primerTacto.toFixed(3)} min)` : '';
+        showToast(`✓ ${CARGAS.length} cargas → Escenario ${ESCENARIO_ACTIVO}${tactoInfo}`);
+      }, 300);
+
+    } catch(err) {
+      loader.classList.remove('active');
+      showToast('⚠ Error al cargar Excel: ' + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+
+// ── CONFIGURACIÓN ─────────────────────────────────────────────────────
+let CONFIG = {
+  tacto: 1.090,
+  minutos: 440,
+  produccion: 0,   // se calcula
+  equipo: 'EQ16-17',
+  supervisor: 'S06',
+  satObjetivo: 109
+};
+// Calcular producción inicial
+CONFIG.produccion = Math.floor(CONFIG.minutos / CONFIG.tacto);
+
+function openConfig() {
+  document.getElementById('cfg-tacto').value   = CONFIG.tacto;
+  document.getElementById('cfg-min').value     = CONFIG.minutos;
+  document.getElementById('cfg-equipo').value  = CONFIG.equipo;
+  document.getElementById('cfg-super').value   = CONFIG.supervisor;
+  document.getElementById('cfg-sat-obj').value   = SAT_CONFIG.objetivo || 90;
+  const avisoCfg = document.getElementById('cfg-sat-aviso');
+  if (avisoCfg) avisoCfg.value = SAT_CONFIG.aviso || 80;
+  updateProdPreview();
+
+  // Actualizar preview en tiempo real al cambiar inputs
+  ['cfg-tacto','cfg-min','cfg-sat-obj'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.oninput = updateProdPreview;
+  });
+
+  document.getElementById('config-modal').classList.add('open');
+}
+
+function closeConfig() {
+  document.getElementById('config-modal').classList.remove('open');
+}
+
+function calcProd(tacto, minutos, satObj) {
+  // Producción = Minutos disponibles / Tacto de línea
+  return Math.floor(minutos / tacto);
+}
+
+function updateProdPreview() {
+  const t  = parseFloat(document.getElementById('cfg-tacto').value)    || 1.120;
+  const m  = parseFloat(document.getElementById('cfg-min').value)       || 440;
+  const s       = parseFloat(document.getElementById('cfg-sat-obj')?.value)   || 90;
+  const sAviso  = parseFloat(document.getElementById('cfg-sat-aviso')?.value) || 80;
+  SAT_CONFIG.objetivo = s;
+  SAT_CONFIG.aviso    = sAviso;
+  localStorage.setItem('ml2_sat_config', JSON.stringify(SAT_CONFIG));
+  const p  = calcProd(t, m, s);
+  const el = document.getElementById('cfg-prod-preview');
+  if (el) el.textContent = isFinite(p) ? p + ' uds' : '—';
+}
+
+function applyConfig() {
+  const newTacto  = parseFloat(document.getElementById('cfg-tacto').value);
+  const newMin    = parseFloat(document.getElementById('cfg-min').value);
+  const newEq     = document.getElementById('cfg-equipo').value.trim();
+  const newSuper  = document.getElementById('cfg-super').value.trim();
+  const newSatObj = parseFloat(document.getElementById('cfg-sat-obj').value);
+
+  if (isNaN(newTacto) || newTacto <= 0)  { showToast('⚠ Tacto inválido'); return; }
+  if (isNaN(newMin)   || newMin <= 0)    { showToast('⚠ Minutos inválidos'); return; }
+  if (isNaN(newSatObj)|| newSatObj <= 0) { showToast('⚠ Saturación inválida'); return; }
+
+  const newProd = calcProd(newTacto, newMin, newSatObj);
+
+  CONFIG.tacto       = newTacto;
+  CONFIG.minutos     = newMin;
+  CONFIG.produccion  = newProd;
+  CONFIG.equipo      = newEq;
+  CONFIG.supervisor  = newSuper;
+  CONFIG.satObjetivo = newSatObj;
+
+  // Actualizar header
+  document.getElementById('hdr-tacto').textContent  = newTacto.toFixed(3).replace('.',',');
+  document.getElementById('hdr-prod').textContent   = newProd;
+  document.getElementById('hdr-equipo').textContent = newEq;
+
+  closeConfig();
+  buildPlant();
+  updatePlantSat();
+
+  if (currentCarga) openCarga(currentCarga);
+
+  showToast(`✓ Tacto ${newTacto.toFixed(3)} min → ${newProd} uds/turno`);
+}
+
+
+// ── CAMBIAR UBICACIÓN ─────────────────────────────────────────────────
+function openUbicacion() {
+  if (!currentCarga) return;
+  const info = TACTO_INFO[currentCarga];
+  if (!info) return;
+
+  document.getElementById('ub-carga-num').textContent =
+    `${currentCarga} — ${info.label}`;
+  document.getElementById('ub-tacto-actual').textContent = info.tacto;
+  document.getElementById('ub-lado-actual').textContent =
+    info.lado === 'izq' ? '◀ IZQUIERDO' : 'DERECHO ▶';
+
+  // Rellenar selector de tactos
+  const sel = document.getElementById('ub-nuevo-tacto');
+  sel.innerHTML = '<option value="">Selecciona tacto...</option>';
+  TACTOS_ORDEN.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t;
+    opt.textContent = t;
+    if (t === info.tacto) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  // Marcar lado actual
+  document.querySelectorAll('input[name="ub-lado"]').forEach(r => {
+    r.checked = r.value === (info.lado || 'der');
+  });
+
+  // Rellenar operarios actuales
+  const opsActuales = TACTO_INFO[currentCarga]?.ops || 1;
+  const inpOps = document.getElementById('ub-operarios');
+  if (inpOps) inpOps.value = opsActuales;
+  document.getElementById('modal-ubicacion').classList.add('open');
+}
+
+function closeUbicacion() {
+  document.getElementById('modal-ubicacion').classList.remove('open');
+}
+
+function confirmarUbicacion() {
+  const nuevoTacto = document.getElementById('ub-nuevo-tacto').value;
+  const nuevoLado  = document.querySelector('input[name="ub-lado"]:checked')?.value || 'der';
+
+  if (!nuevoTacto) { showToast('⚠ Selecciona un tacto'); return; }
+  if (!currentCarga || !TACTO_INFO[currentCarga]) return;
+
+  const info = TACTO_INFO[currentCarga];
+  const tactoAnterior = info.tacto;
+  const ladoAnterior  = info.lado;
+
+  // Actualizar TACTO_INFO
+  TACTO_INFO[currentCarga].tacto = nuevoTacto;
+  TACTO_INFO[currentCarga].lado  = nuevoLado;
+
+  // Actualizar indicador en header vista carga
+  document.getElementById('cv-ubicacion').textContent =
+    `${nuevoTacto} ${nuevoLado === 'izq' ? '◀IZQ' : 'DER▶'}`;
+
+  closeUbicacion();
+  // Reconstruir planta con nueva posición
+  // Guardar operarios
+  const newOps = parseFloat(document.getElementById('ub-operarios')?.value) || 1;
+  if (TACTO_INFO[currentCarga]) TACTO_INFO[currentCarga].ops = newOps;
+  buildPlant();
+  updatePlantSat();
+  autoguardar();
+  showToast(`✓ ${currentCarga} → ${nuevoTacto} ${nuevoLado === 'izq' ? 'IZQ' : 'DER'}`);
+}
+
+
+// ── EDITAR COLUMNAS ───────────────────────────────────────────────────
+let tempCols = [];
+
+function openColsModal() {
+  if (!currentCarga) return;
+  const c = cargaMap[currentCarga];
+  // Cada entrada: {orig: nombre_original, cur: nombre_actual}
+  tempCols = (c.cols || []).map(col => ({orig: col, cur: col}));
+  document.getElementById('mc-carga-num').textContent = `${c.num} — ${c.nombre}`;
+  renderColsList();
+  document.getElementById('modal-cols').classList.add('open');
+}
+
+function closeColsModal() {
+  document.getElementById('modal-cols').classList.remove('open');
+}
+
+function renderColsList() {
+  const list = document.getElementById('mc-cols-list');
+  list.innerHTML = '';
+  tempCols.forEach((entry, i) => {
+    const col = entry.cur || entry;
+    const orig = entry.orig || col;
+    const row = document.createElement('div');
+    row.className = 'col-edit-row';
+    row.innerHTML = `
+      <div style="width:12px;height:12px;border-radius:2px;flex-shrink:0;background:${COL_COLORS[col]||'#aaa'}"></div>
+      <input class="col-edit-input" value="${col}" data-idx="${i}"
+             oninput="tempCols[${i}].cur = this.value.trim()">
+      <button class="btn-del-col" onclick="deleteColFromModal(${i})">✕</button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function deleteColFromModal(idx) {
+  tempCols[idx]._deleted = true;
+  tempCols.splice(idx, 1);
+  renderColsList();
+}
+
+function addColFromModal() {
+  const inp = document.getElementById('mc-new-col');
+  const name = inp.value.trim();
+  if (!name) { showToast('⚠ Escribe un nombre'); return; }
+  if (tempCols.some(e => e.cur === name)) { showToast('⚠ Ya existe'); return; }
+  tempCols.push({orig: null, cur: name}); // nueva columna
+  inp.value = '';
+  renderColsList();
+}
+
+function applyColsModal() {
+  const c = cargaMap[currentCarga];
+
+  tempCols.forEach(entry => {
+    const orig = entry.orig;  // nombre original (null = nueva)
+    const cur  = entry.cur;   // nombre actual
+
+    if (!cur) return;
+
+    if (orig === null) {
+      // Columna nueva — copiar tiempos de TODOS
+      if (c.totales[cur] === undefined) c.totales[cur] = c.totales['TODOS'] || 0;
+      c.ops.forEach(op => {
+        if (op[cur] === undefined) {
+          op[cur] = op['TODOS'] !== undefined ? op['TODOS'] : null;
+        }
+      });
+    } else if (orig !== cur) {
+      // Renombrada: mover datos de orig a cur
+      if (c.totales[orig] !== undefined) {
+        c.totales[cur] = c.totales[orig];
+        delete c.totales[orig];
+      }
+      c.ops.forEach(op => {
+        op[cur] = op[orig] !== undefined ? op[orig] : null;
+        delete op[orig];
+      });
+    }
+    // Si orig === cur → sin cambios
+  });
+
+  // Columnas que estaban y no están en tempCols → eliminadas
+  const colsQueSiguen = new Set(tempCols.map(e => e.orig).filter(Boolean));
+  const colsOriginales = c.cols || [];
+  colsOriginales.forEach(col => {
+    if (!colsQueSiguen.has(col)) {
+      // Eliminada: borrar solo sus tiempos
+      delete c.totales[col];
+      c.ops.forEach(op => { op[col] = null; });
+    }
+  });
+
+  // Actualizar c.cols con los nombres actuales
+  c.cols = tempCols.map(e => e.cur).filter(Boolean);
+
+  closeColsModal();
+  openCarga(currentCarga);
+  autoguardar();
+  showToast('✓ Modelos actualizados');
+}
+
+
+// ── MIX DE MODELOS ────────────────────────────────────────────────────
+// MIX_DATA[cargaNum][col] = {num: X, den: Y} → X de cada Y
+const MIX_DATA = {};
+const PENDING_OPS = {};
+const MIX_DATA_STORE = { A: {}, B: {} };
+
+function getMixPct(cargaNum, col) {
+  const v = MIX_DATA[cargaNum]?.[col];
+  if (v === undefined || v === null) return '';
+  // Compatibilidad con formato antiguo {num, den}
+  if (typeof v === 'object' && v.num !== undefined) return v.num > 0 ? Math.round(v.num/v.den*100) : '';
+  return v;
+}
+
+function setMixPct(cargaNum, col, val) {
+  if (!MIX_DATA[cargaNum]) MIX_DATA[cargaNum] = {};
+  const pct = Math.min(100, Math.max(0, parseFloat(val) || 0));
+  MIX_DATA[cargaNum][col] = pct;
+  calcMediaMix(cargaNum);
+}
+
+function calcMediaMix(cargaNum) {
+  const c = cargaMap[cargaNum];
+  if (!c || !c.totales) return;
+  const resEl = document.getElementById('mix-result-' + cargaNum);
+  if (!resEl) return;
+
+  // Media ponderada por porcentaje
+  // Media = Σ(pct_i/100 × t_i) / Σ(pct_i/100)
+  // Usar suma real de ops (no c.totales que puede estar desactualizado)
+  let totalPeso = 0, totalTiempo = 0;
+  const colsModelo = (c.cols || []).filter(col => col !== 'TODOS');
+  colsModelo.forEach(col => {
+    const pct = getMixPct(cargaNum, col);
+    if (!pct || pct === '' || parseFloat(pct) === 0) return;
+    // Calcular tiempo real sumando ops
+    const t = c.ops
+      ? Math.round(c.ops.reduce((s, o) => s + (parseFloat(o[col]) || 0), 0) * 1000) / 1000
+      : (parseFloat(c.totales?.[col]) || 0);
+    if (!t) return;
+    const peso = parseFloat(pct) / 100;
+    totalPeso   += peso;
+    totalTiempo += peso * t;
+  });
+
+  if (totalPeso === 0) {
+    resEl.innerHTML = '<div style="color:var(--gray);font-size:10px;text-align:center">Introduce % de cada modelo</div>';
+    return;
+  }
+
+  const media = totalTiempo / totalPeso;
+  const nOpsMix = parseFloat(TACTO_INFO[cargaNum]?.ops || 1);
+  const sat   = Math.round(media / (CONFIG.tacto * nOpsMix) * 100);
+  const color = getSatColor(sat);
+
+  resEl.innerHTML = `
+    <div class="mix-result-title">MEDIA PONDERADA MIX</div>
+    <div style="display:flex;align-items:baseline;gap:8px;margin-top:4px">
+      <span class="mix-result-val">${(parseFloat(media)||0).toFixed(3)}</span>
+      <span style="font-size:10px;color:var(--gray)">min</span>
+      <span style="font-family:'Share Tech Mono';font-size:13px;color:${color}">${sat}% SAT</span>
+    </div>
+    <div class="sat-bar" style="margin-top:6px">
+      <div class="sat-fill" style="width:${Math.min(sat,130)}%;background:${color}"></div>
+    </div>`;
+}
+
+function renderModelosPanel(c) {
+  const modDiv = document.getElementById('cv-modelos');
+  modDiv.innerHTML = '';
+
+  if (!c.totales || Object.keys(c.totales).length === 0) {
+    modDiv.innerHTML = '<div style="color:var(--gray);font-size:11px">Sin datos</div>';
+    return;
+  }
+
+  // Iterar sobre c.cols para mostrar todos los modelos que existen
+  // (excepto TODOS) aunque el total sea 0 si la columna existe en la carga
+  const colsParaMostrar = (c.cols || []).filter(col => col !== 'TODOS');
+  colsParaMostrar.forEach(col => {
+    // Calcular total real sumando ops
+    const val = c.ops
+      ? Math.round(c.ops.reduce((s, o) => s + (parseFloat(o[col]) || 0), 0) * 1000) / 1000
+      : (parseFloat(c.totales?.[col]) || 0);
+    if (col === 'TODOS') return;
+    const nOpsM    = parseFloat(TACTO_INFO[c.num]?.ops || 1);
+    const tactoM   = CONFIG.tacto * nOpsM;
+    const sat      = Math.round((parseFloat(val)||0) / tactoM * 100);
+    const color    = COL_COLORS[col] || '#aaa';
+    const satColor = getSatColor(sat);
+
+    const card = document.createElement('div');
+    card.className = 'modelo-card';
+    // Usar ID único para el input para poder leerlo
+    const inputId = 'mix-inp-' + c.num + '-' + col.replace(/[^a-zA-Z0-9]/g,'_');
+    card.innerHTML = `
+      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px">
+        <div class="modelo-name">${col}</div>
+        <div class="modelo-time" style="color:${color}">${(parseFloat(val)||0).toFixed(3)}<span style="font-size:9px;color:var(--gray)"> min</span></div>
+      </div>
+      <div class="modelo-sat" style="color:${satColor};margin-bottom:4px">${sat}% SAT</div>
+      <div class="sat-bar" style="margin-bottom:6px"><div class="sat-fill" style="width:${Math.min(sat,130)}%;background:${satColor}"></div></div>
+      ${col !== 'TODOS' ? `
+      <div class="mix-freq-row">
+        <span class="mix-freq-label">MIX</span>
+        <input class="mix-freq-input" type="number" min="0" max="100" step="5"
+               value="${getMixPct(c.num, col)}" placeholder="0"
+               data-carga="${c.num}" data-col="${col}"
+               oninput="setMixPct(this.dataset.carga, this.dataset.col, this.value)"
+               style="width:52px">
+        <span class="mix-freq-sep" style="font-size:11px">%</span>
+      </div>` : ''}
+    `;
+    modDiv.appendChild(card);
+  });
+
+  // Panel media ponderada
+  const resDiv = document.createElement('div');
+  resDiv.className = 'mix-result-bar';
+  resDiv.id = 'mix-result-' + c.num;
+  resDiv.innerHTML = '<div style="color:var(--gray);font-size:10px;text-align:center">Introduce frecuencias</div>';
+  modDiv.appendChild(resDiv);
+
+  // Si ya hay datos de mix, calcular
+  if (MIX_DATA[c.num] && Object.values(MIX_DATA[c.num]).some(v => v > 0)) {
+    calcMediaMix(c.num);
+  }
+}
+
+function renderModelos(c) {
+  renderModelosPanel(c);
+}
+
+
+// ── PERSISTENCIA EN LOCALSTORAGE ─────────────────────────────────────
+const STORAGE_KEY_BASE = 'ml2_ramal2_data';
+function getStorageKey() {
+  return STORAGE_KEY_BASE + '_' + (ESCENARIO_ACTIVO || 'A');
+}
+
+function guardarEstado() {
+  try {
+    const estado = {
+      version: DASHBOARD_VERSION,
+      cargas: CARGAS,
+      mixData: MIX_DATA,
+      pendingOps: PENDING_OPS,
+      tactoInfo: TACTO_INFO,
+      config: CONFIG,
+      timestamp: new Date().toISOString()
+    };
+    localStorage.setItem(getStorageKey(), JSON.stringify(estado));
+  } catch(e) {
+    console.warn('No se pudo guardar:', e);
+  }
+}
+
+function cargarEstado() {
+  try {
+    const raw = localStorage.getItem(getStorageKey());
+    if (!raw) return false;
+    const estado = JSON.parse(raw);
+    if (!estado.cargas || !estado.cargas.length) return false;
+
+    // Si el HTML es más nuevo que el estado guardado → usar datos del HTML
+    // pero conservar cambios manuales (totales editados, pendientes, mix, config)
+    if (!estado.version || estado.version < DASHBOARD_VERSION) {
+      console.log(`Nueva versión detectada (${estado.version} → ${DASHBOARD_VERSION}) — usando datos del HTML`);
+      // Restaurar solo lo que NO viene del PDF: pendientes, mix, config
+      if (estado.pendingOps) {
+        Object.keys(estado.pendingOps).forEach(k => { PENDING_OPS[k] = estado.pendingOps[k]; });
+      }
+      if (estado.mixData) {
+        Object.keys(estado.mixData).forEach(k => { MIX_DATA[k] = estado.mixData[k]; });
+      }
+      if (estado.config) {
+        Object.assign(CONFIG, estado.config);
+      }
+      // Guardar con la nueva versión
+      guardarEstado();
+      return true;
+    }
+
+    // Restaurar cargas
+    CARGAS.length = 0;
+    estado.cargas.forEach(c => CARGAS.push(c));
+    Object.keys(cargaMap).forEach(k => delete cargaMap[k]);
+    CARGAS.forEach(c => cargaMap[c.num] = c);
+
+    // Restaurar mix
+    if (estado.mixData) {
+      Object.keys(estado.mixData).forEach(k => {
+        MIX_DATA[k] = estado.mixData[k];
+      });
+    }
+
+    // Restaurar pendientes
+    if (estado.pendingOps) {
+      Object.keys(estado.pendingOps).forEach(k => {
+        PENDING_OPS[k] = estado.pendingOps[k];
+      });
+    }
+
+    // Restaurar TACTO_INFO
+    if (estado.tactoInfo) {
+      Object.keys(estado.tactoInfo).forEach(k => {
+        if (TACTO_INFO[k]) {
+          TACTO_INFO[k].tacto = estado.tactoInfo[k].tacto || TACTO_INFO[k].tacto;
+          TACTO_INFO[k].lado  = estado.tactoInfo[k].lado  || TACTO_INFO[k].lado;
+        }
+      });
+    }
+
+    // Restaurar config
+    if (estado.config) {
+      Object.assign(CONFIG, estado.config);
+      const el = document.getElementById('hdr-tacto');
+      if (el) el.textContent = CONFIG.tacto.toFixed(3).replace('.',',');
+      const ep = document.getElementById('hdr-prod');
+      if (ep) ep.textContent = Math.floor(CONFIG.minutos / CONFIG.tacto);
+    }
+
+    const ts = estado.timestamp ? new Date(estado.timestamp).toLocaleString('es-ES') : '';
+    console.log(`Estado restaurado (${ts})`);
+    return true;
+  } catch(e) {
+    console.warn('No se pudo cargar estado:', e);
+    return false;
+  }
+}
+
+function borrarEstado() {
+  localStorage.removeItem(STORAGE_KEY);
+  showToast('🗑 Estado borrado — recarga para resetear');
+}
+
+// Autoguardar cada vez que se hace un cambio significativo
+function autoguardar() {
+  guardarEstado();
+}
+
+
+// ── ZOOM PLANTA ──────────────────────────────────────────────────────
+let plantZoomLevel = 1.0;
+
+function plantZoom(factor) {
+  const svg = document.getElementById('plant-svg');
+  const wrap = svg.parentElement;
+  const scrollRatio = wrap.scrollLeft / svg.offsetWidth;
+  
+  plantZoomLevel = Math.max(0.4, Math.min(4.0, plantZoomLevel * factor));
+  const baseWidth = 6200;
+  svg.style.width = (baseWidth * plantZoomLevel) + 'px';
+  
+  // Mantener posición de scroll proporcional
+  wrap.scrollLeft = scrollRatio * svg.offsetWidth;
+}
+
+function plantZoomReset() {
+  const svg = document.getElementById('plant-svg');
+  const wrap = svg.parentElement;
+  plantZoomLevel = 1.0;
+  svg.style.width = '6200px';
+  wrap.scrollLeft = 0;
+}
+
+// Zoom con rueda del ratón en la planta
+document.addEventListener('DOMContentLoaded', () => {
+  const wrap = document.querySelector('.plant-wrap');
+  if (wrap) {
+    wrap.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        plantZoom(e.deltaY < 0 ? 1.1 : 0.9);
+      }
+    }, {passive: false});
+  }
+});
+
+
+// ── DRAG TO SCROLL PLANTA ─────────────────────────────────────────────
+(function() {
+  let isDown = false, startX, scrollLeft;
+
+  function initPlantScroll() {
+    const wrap = document.querySelector('.plant-wrap');
+    if (!wrap) return;
+
+    wrap.addEventListener('mousedown', e => {
+      isDown = true;
+      wrap.style.cursor = 'grabbing';
+      startX = e.pageX - wrap.offsetLeft;
+      scrollLeft = wrap.scrollLeft;
+      e.preventDefault();
+    });
+    wrap.addEventListener('mouseleave', () => { isDown = false; wrap.style.cursor = 'grab'; });
+    wrap.addEventListener('mouseup',    () => { isDown = false; wrap.style.cursor = 'grab'; });
+    wrap.addEventListener('mousemove',  e => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - wrap.offsetLeft;
+      wrap.scrollLeft = scrollLeft - (x - startX);
+    });
+
+    // Touch
+    let touchStartX, touchScrollLeft;
+    wrap.addEventListener('touchstart', e => {
+      touchStartX = e.touches[0].pageX;
+      touchScrollLeft = wrap.scrollLeft;
+    }, {passive: true});
+    wrap.addEventListener('touchmove', e => {
+      const dx = touchStartX - e.touches[0].pageX;
+      wrap.scrollLeft = touchScrollLeft + dx;
+    }, {passive: true});
+
+    wrap.style.cursor = 'grab';
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPlantScroll);
+  } else {
+    initPlantScroll();
+  }
+})();
+
+function plantScroll(dx) {
+  const wrap = document.querySelector('.plant-wrap');
+  if (wrap) wrap.scrollLeft += dx;
+}
+
+
+// ── TEMAS ─────────────────────────────────────────────────────────────
+const THEMES = ['dark','light','grey','green','midnight'];
+const THEME_COLORS = {
+  dark:     '#050a12',
+  light:    '#f0f4f8',
+  grey:     '#1a1a2e',
+  green:    '#0a1a0f',
+  midnight: '#0d0d1a',
+};
+const THEME_LABELS = {
+  dark:'Oscuro', light:'Claro', grey:'Gris', green:'Verde', midnight:'Medianoche'
+};
+
+function setTheme(name) {
+  THEMES.forEach(t => document.body.classList.remove('theme-' + t));
+  document.body.classList.add('theme-' + name);
+  localStorage.setItem('ml2_theme', name);
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === name);
+  });
+}
+
+function loadTheme() {
+  const saved = localStorage.getItem('ml2_theme') || 'dark';
+  setTheme(saved);
+}
+
+
+// ── OPERACIONES PENDIENTES ────────────────────────────────────────────
+// PENDING_OPS[cargaNum] = [{pr, desc, vals, t_todos, fromCarga}]
+// Se guarda en localStorage junto con el estado
+
+function getPendingOps(cargaNum) {
+  return (typeof PENDING_OPS !== 'undefined' && PENDING_OPS[cargaNum]) ? PENDING_OPS[cargaNum] : [];
+}
+
+function isPendingOp(cargaNum, pr) {
+  return getPendingOps(cargaNum).some(o => o.pr === pr);
+}
+
+function addPendingOp(cargaNum, op, fromCarga) {
+  if (!PENDING_OPS[cargaNum]) PENDING_OPS[cargaNum] = [];
+  // Evitar duplicados
+  if (!PENDING_OPS[cargaNum].some(o => o.pr === op.pr)) {
+    PENDING_OPS[cargaNum].push({...op, _fromCarga: fromCarga});
+  }
+}
+
+function removePendingOp(cargaNum, pr) {
+  if (!PENDING_OPS[cargaNum]) return;
+  PENDING_OPS[cargaNum] = PENDING_OPS[cargaNum].filter(o => o.pr !== pr);
+}
+
+function confirmarPendientes(cargaNum) {
+  // Confirmar todas las ops pendientes de esta carga — dejan de estar en rojo
+  PENDING_OPS[cargaNum] = [];
+  autoguardar();
+  openCarga(cargaNum);
+  showToast('✓ Cambios confirmados');
+}
+
+function deshacerPendientes(cargaNum) {
+  const pendientes = getPendingOps(cargaNum);
+  if (!pendientes.length) return;
+
+  const dst = cargaMap[cargaNum];
+
+  pendientes.forEach(op => {
+    const fromCarga = op._fromCarga;
+    if (!fromCarga || !cargaMap[fromCarga]) return;
+
+    const src = cargaMap[fromCarga];
+
+    // Quitar de la carga destino
+    const idx = dst.ops.findIndex(o => o.pr === op.pr);
+    if (idx !== -1) {
+      const [removed] = dst.ops.splice(idx, 1);
+      // Devolver a la carga origen
+      src.ops.push(removed);
+      src.n_ops = src.ops.length;
+      // Recalcular totales origen
+      (src.cols || []).forEach(col => {
+        const vals = src.ops.map(o => o[col]).filter(v => v != null);
+        if (vals.length > 0) src.totales[col] = Math.round(vals.reduce((a,b)=>a+b,0)*1000)/1000;
+      });
+    }
+  });
+
+  dst.n_ops = dst.ops.length;
+  // Recalcular totales destino
+  (dst.cols || []).forEach(col => {
+    const vals = dst.ops.map(o => o[col]).filter(v => v != null);
+    dst.totales[col] = vals.length > 0 ? Math.round(vals.reduce((a,b)=>a+b,0)*1000)/1000 : 0;
+  });
+
+  PENDING_OPS[cargaNum] = [];
+  autoguardar();
+  updatePlantSat();
+  openCarga(cargaNum);
+  showToast('↩ Operaciones devueltas a su carga original');
+}
+
+
+function renderPendingBar(c) {
+  const container = document.getElementById('pending-bar-container');
+  if (!container) return;
+  const pendientes = getPendingOps(c.num);
+  if (pendientes.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  container.innerHTML = `
+    <div class="pending-bar">
+      <span class="pending-bar-label">🔴 ${pendientes.length} OPERACIÓN${pendientes.length>1?'ES':''} PENDIENTE${pendientes.length>1?'S':''} DE CONFIRMAR</span>
+      <button class="btn-undo-changes" onclick="descargarPDFPendientes('${c.num}')" style="border-color:var(--accent);color:var(--accent)">⬇ PDF</button>
+      <button class="btn-undo-changes" onclick="descargarExcelPendientes('${c.num}')" style="border-color:var(--green);color:var(--green)">⬇ EXCEL</button>
+      <button class="btn-undo-changes" onclick="deshacerPendientes('${c.num}')">↩ DESHACER</button>
+      <button class="btn-confirm-changes" onclick="confirmarPendientes('${c.num}')">✓ CONFIRMAR</button>
+    </div>`;
+}
+
+
+// ── PDF PENDIENTES ────────────────────────────────────────────────────
+function descargarPDFPendientes(cargaNum) {
+  const pendientes = getPendingOps(cargaNum);
+  if (!pendientes.length) return;
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+  const dst = cargaMap[cargaNum];
+  const fecha = new Date().toLocaleDateString('es-ES');
+  const semana = (() => {
+    const d = new Date(); const oneJan = new Date(d.getFullYear(),0,1);
+    return Math.ceil((((d-oneJan)/86400000)+oneJan.getDay()+1)/7);
+  })();
+  const solicitante = pendientes[0]?._solicitadoPor || '—';
+
+  const W = 297, H = 210;
+  const M = 8; // margen
+
+  // ── CABECERA ──────────────────────────────────────────────
+  // Título principal
+  doc.setFillColor(220,230,242);
+  doc.rect(M, M, W-2*M, 10, 'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(12);
+  doc.setTextColor(0,0,0);
+  doc.text('VARIACIONES CARGAS T.8', M+3, M+7);
+
+  doc.setFontSize(9);
+  doc.text(`Supervisor: ${solicitante}`, W-M-70, M+7);
+
+  // Subtítulo
+  doc.setFillColor(200,214,232);
+  doc.rect(M, M+10, W-2*M, 7, 'F');
+  doc.setFontSize(9);
+  doc.setFont('helvetica','bold');
+  doc.text('HOJA DE TRABAJO PARA CAMBIO DE CARGAS', M+3, M+15);
+  doc.text(`Semana: ${semana}`, W-M-40, M+15);
+
+  // ── CABECERA TABLA ────────────────────────────────────────
+  const tableTop = M + 20;
+  const cols = {
+    grOri:   { x: M,      w: 22, label: 'Grupo\nOrigen' },
+    grDst:   { x: M+22,   w: 22, label: 'Grupo\nDestino' },
+    cOri:    { x: M+44,   w: 28, label: 'Carga\nInicio' },
+    op:      { x: M+72,   w: 18, label: 'Nº OP' },
+    descOp:  { x: M+90,   w: 70, label: 'Descripción Operación' },
+    tTodos:  { x: M+160,  w: 18, label: 'Tiempo\n(min)' },
+    cDst:    { x: M+178,  w: 28, label: 'Carga\nFinal' },
+    orden:   { x: M+206,  w: 30, label: 'Orden OP.\nPosterior a' },
+    obs:     { x: M+236,  w: W-2*M-236, label: 'Observación' },
+  };
+
+  // Fondo cabecera tabla
+  doc.setFillColor(180,199,231);
+  doc.rect(M, tableTop, W-2*M, 10, 'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(7);
+  doc.setTextColor(0,0,0);
+
+  Object.values(cols).forEach(col => {
+    const lines = col.label.split('\n');
+    lines.forEach((line, i) => {
+      doc.text(line, col.x + 1, tableTop + 4 + i*3.5);
+    });
+    // Línea vertical
+    doc.setDrawColor(150,150,150);
+    doc.line(col.x, tableTop, col.x, tableTop + 10);
+  });
+  doc.line(M + W-2*M, tableTop, M + W-2*M, tableTop + 10);
+  // Borde cabecera
+  doc.setDrawColor(100,100,100);
+  doc.rect(M, tableTop, W-2*M, 10);
+
+  // ── FILAS ─────────────────────────────────────────────────
+  let y = tableTop + 10;
+  const rowH = 8;
+  const maxRows = Math.floor((H - y - 20) / rowH);
+
+  // Agrupar por carga origen
+  const porOrigen = {};
+  pendientes.forEach(op => {
+    const from = op._fromCarga || '?';
+    if (!porOrigen[from]) porOrigen[from] = [];
+    porOrigen[from].push(op);
+  });
+
+  let rowCount = 0;
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(7.5);
+
+  Object.entries(porOrigen).forEach(([fromNum, ops]) => {
+    const srcCarga = cargaMap[fromNum];
+    const srcEq    = srcCarga?.equipo || getEqFromNum(fromNum);
+    const dstEq    = dst?.equipo || getEqFromNum(cargaNum);
+
+    ops.forEach((op, i) => {
+      if (rowCount >= maxRows) return;
+
+      const bg = rowCount % 2 === 0 ? [242,247,252] : [255,255,255];
+      doc.setFillColor(...bg);
+      doc.rect(M, y, W-2*M, rowH, 'F');
+
+      // Bordes columnas
+      doc.setDrawColor(200,200,200);
+      Object.values(cols).forEach(col => {
+        doc.line(col.x, y, col.x, y + rowH);
+      });
+      doc.line(M + W-2*M, y, M + W-2*M, y + rowH);
+
+      doc.setTextColor(0,0,0);
+      const cy = y + rowH/2 + 1.5;
+
+      // Datos fila
+      doc.text(i===0 ? `EQ ${srcEq}` : '', cols.grOri.x+1, cy);
+      doc.text(i===0 ? `EQ ${dstEq}` : '', cols.grDst.x+1, cy);
+      doc.text(i===0 ? `${fromNum}` : '', cols.cOri.x+1, cy);
+      doc.text(String(op.pr || ''), cols.op.x+1, cy);
+      // Descripción — truncar si es muy larga
+      const desc = (op.desc || '').substring(0, 48);
+      doc.text(desc, cols.descOp.x+1, cy);
+      // Tiempo
+      doc.setFont('helvetica','bold');
+      doc.text(op.TODOS != null ? (parseFloat(op.TODOS)||0).toFixed(3) : '—', cols.tTodos.x+1, cy);
+      doc.setFont('helvetica','normal');
+      doc.text(i===0 ? `${cargaNum}` : '', cols.cDst.x+1, cy);
+      doc.text('', cols.orden.x+1, cy); // Vacío — lo rellena el industrial
+      doc.text('', cols.obs.x+1, cy);   // Vacío — observaciones
+
+      y += rowH;
+      rowCount++;
+    });
+  });
+
+  // Rellenar filas vacías hasta completar al menos 10 filas
+  const minFilas = Math.max(10, rowCount + 3);
+  while (rowCount < minFilas && y < H - 20) {
+    const bg = rowCount % 2 === 0 ? [242,247,252] : [255,255,255];
+    doc.setFillColor(...bg);
+    doc.rect(M, y, W-2*M, rowH, 'F');
+    doc.setDrawColor(200,200,200);
+    Object.values(cols).forEach(col => doc.line(col.x, y, col.x, y+rowH));
+    doc.line(M+W-2*M, y, M+W-2*M, y+rowH);
+    y += rowH; rowCount++;
+  }
+
+  // Borde exterior tabla
+  doc.setDrawColor(100,100,100);
+  doc.rect(M, tableTop+10, W-2*M, y-(tableTop+10));
+
+  // ── NOTA ──────────────────────────────────────────────────
+  doc.setFont('helvetica','italic');
+  doc.setFontSize(7);
+  doc.setTextColor(80,80,80);
+  doc.text('NOTA: Rellenar sólo la casilla de grupo de origen / destino en caso de cambios de operaciones entre grupos.', M, y+5);
+
+  // ── PIE ───────────────────────────────────────────────────
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(7);
+  doc.setTextColor(100,100,100);
+  doc.text('T8 Ingeniería Industrial - PF8', M, H-M);
+  doc.text(`Pág. 1`, W-M-10, H-M);
+  doc.text(`Generado: ${fecha}`, W/2-15, H-M);
+
+  // ── ESTADO PENDIENTE ──────────────────────────────────────
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(8);
+  doc.setTextColor(200,0,0);
+  doc.text('PENDIENTE DE CONFIRMAR', W-M-55, M+7);
+
+  const fname = `VariacionCargas_${cargaNum}_${fecha.replace(/\//g,'-')}.pdf`;
+  doc.save(fname);
+  showToast('⬇ PDF generado');
+}
+
+
+function descargarExcelPendientes(cargaNum) {
+  const supervisor = localStorage.getItem('ML2_SUPERVISOR') || 'Supervisor';
+  const hoy = new Date();
+  const dd = String(hoy.getDate()).padStart(2,'0');
+  const mm = String(hoy.getMonth()+1).padStart(2,'0');
+  const yyyy = hoy.getFullYear();
+  const fecha = `${dd}/${mm}/${yyyy}`;
+  const startOfYear = new Date(yyyy, 0, 1);
+  const weekNum = Math.ceil(((hoy - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
+
+  // Recopilar pendientes
+  const filas = [];
+  Object.entries(PENDING_OPS).forEach(([dstNum, ops]) => {
+    if (!ops || !ops.length) return;
+    ops.forEach(op => {
+      const eqOri = cargaMap[op.fromCarga]?.equipo || '';
+      const eqDst = cargaMap[dstNum]?.equipo || '';
+      filas.push({
+        grOrigen:  eqOri ? `103${eqOri}402` : (op.fromCarga||''),
+        grDestino: eqDst ? `103${eqDst}402` : (dstNum||''),
+        operacion: String(op.pr || ''),
+        cargaFinal: String(dstNum || ''),
+        ordenPost: '',
+        obs: ''
+      });
+    });
+  });
+
+  if (!filas.length) { showToast('⚠ No hay operaciones pendientes'); return; }
+
+  const wb = XLSX.utils.book_new();
+  const ws = {};
+  const merges = [];
+
+  function ec(r,c) { return XLSX.utils.encode_cell({r,c}); }
+  function setCell(r, c, v, font, align, border, fill) {
+    const addr = ec(r,c);
+    const t = typeof v === 'number' ? 'n' : 's';
+    ws[addr] = { v: v===null||v===undefined ? '' : v, t };
+    const s = {};
+    if (font)   s.font      = font;
+    if (align)  s.alignment = align;
+    if (border) s.border    = border;
+    if (fill)   s.fill      = {patternType:'solid', fgColor:{rgb:fill}};
+    if (Object.keys(s).length) ws[addr].s = s;
+  }
+
+  const MED  = {style:'medium', color:{rgb:'000000'}};
+  const THIN = {style:'thin',   color:{rgb:'000000'}};
+  const NONE = {style:'none'};
+  const bOUT = {top:MED,  bottom:MED,  left:MED,  right:MED};
+  const bIN  = {top:THIN, bottom:THIN, left:THIN, right:THIN};
+  const bHDR = {top:MED,  bottom:MED,  left:MED,  right:MED};
+
+  const fTIT = {bold:true,  sz:16, name:'Calibri'};
+  const fSUB = {bold:true,  sz:12, name:'Calibri'};
+  const fLBL = {bold:false, sz:10, name:'Calibri'};
+  const fHDR = {bold:true,  sz:10, name:'Calibri'};
+  const fSUP = {bold:true,  sz:11, name:'Calibri', color:{rgb:'000000'}};
+  const fDAT = {bold:false, sz:10, name:'Calibri'};
+  const fPIE = {bold:true,  sz:10, name:'Calibri'};
+  const fNOT = {sz:9,       name:'Calibri', italic:true};
+
+  const AC = {horizontal:'center', vertical:'center', wrapText:true};
+  const AL = {horizontal:'left',   vertical:'center', wrapText:true};
+
+  // ── FILA 1: vacía ──────────────────────────────────────────────────
+  // R=0
+
+  // ── FILA 2: VARIACIONES CARGAS T.8 ────────────────────────────────
+  // R=1: A1:F1 título | G1:H1 "Supervisor:" | I1:K1 nombre
+  setCell(1, 0, 'VARIACIONES CARGAS T.8', fTIT, AC, bOUT);
+  merges.push({s:{r:1,c:0}, e:{r:1,c:5}});
+  setCell(1, 6, 'Supervisor:', fLBL, AC);
+  merges.push({s:{r:1,c:6}, e:{r:1,c:7}});
+  setCell(1, 8, supervisor, fSUP, AC);
+  merges.push({s:{r:1,c:8}, e:{r:1,c:10}});
+
+  // ── FILA 3: vacía ──────────────────────────────────────────────────
+  // R=2
+
+  // ── FILA 4: HOJA DE TRABAJO ────────────────────────────────────────
+  // R=3
+  setCell(3, 0, 'HOJA DE TRABAJO PARA CAMBIO DE CARGAS', fSUB, AC, bOUT);
+  merges.push({s:{r:3,c:0}, e:{r:3,c:5}});
+  setCell(3, 6, 'Semana:', fLBL, AC);
+  merges.push({s:{r:3,c:6}, e:{r:3,c:7}});
+  setCell(3, 8, weekNum, fHDR, AC);
+  merges.push({s:{r:3,c:8}, e:{r:3,c:10}});
+
+  // ── FILAS 5-7: CABECERAS (R=4,5,6) ────────────────────────────────
+  const BLU1 = 'BDD7EE';
+  const BLU2 = '9DC3E6';
+
+  // R=4: Grupo Origen | Grupo Destino | Origen (merge C:D) | Destino (merge E:F) | Observación (merge G:K)
+  setCell(4, 0, 'Grupo\nOrigen',  fHDR, AC, bHDR, BLU1);
+  merges.push({s:{r:4,c:0}, e:{r:6,c:0}}); // merge filas 5-7
+  setCell(4, 1, 'Grupo\nDestino', fHDR, AC, bHDR, BLU1);
+  merges.push({s:{r:4,c:1}, e:{r:6,c:1}});
+  setCell(4, 2, 'Origen',         fHDR, AC, bHDR, BLU1);
+  merges.push({s:{r:4,c:2}, e:{r:4,c:3}});
+  setCell(4, 4, 'Destino',        fHDR, AC, bHDR, BLU1);
+  merges.push({s:{r:4,c:4}, e:{r:4,c:5}});
+  setCell(4, 6, 'Observación (en caso necesario)', fHDR, AC, bHDR, BLU1);
+  merges.push({s:{r:4,c:6}, e:{r:6,c:10}});
+
+  // R=5: sub-cabeceras Operación | Carga Final | Orden OP
+  setCell(5, 2, 'Operación',          fHDR, AC, bHDR, BLU2);
+  merges.push({s:{r:5,c:2}, e:{r:6,c:2}});
+  setCell(5, 3, 'Carga Final',        fHDR, AC, bHDR, BLU2);
+  merges.push({s:{r:5,c:3}, e:{r:6,c:3}});
+  setCell(5, 4, 'Orden OP.\nPosterior a', fHDR, AC, bHDR, BLU2);
+  merges.push({s:{r:5,c:4}, e:{r:6,c:4}});
+  setCell(5, 5, '', fHDR, AC, bHDR, BLU2);
+  merges.push({s:{r:5,c:5}, e:{r:6,c:5}});
+
+  // ── FILAS DE DATOS ─────────────────────────────────────────────────
+  const MIN_ROWS = 29;
+  const dataStart = 7; // R=7 = fila 8 de Excel
+  let dr = dataStart;
+
+  filas.forEach(f => {
+    const fill = (dr % 2 === 0) ? 'DEEAF1' : 'FFFFFF';
+    setCell(dr, 0, f.grOrigen,  fDAT, AC, bIN, fill);
+    setCell(dr, 1, f.grDestino, fDAT, AC, bIN, fill);
+    setCell(dr, 2, f.operacion, fDAT, AC, bIN, fill);
+    setCell(dr, 3, f.cargaFinal,fDAT, AC, bIN, fill);
+    setCell(dr, 4, f.ordenPost, fDAT, AC, bIN, fill);
+    setCell(dr, 5, '',          fDAT, AC, bIN, fill);
+    setCell(dr, 6, f.obs,       fDAT, AL, bIN, fill);
+    merges.push({s:{r:dr,c:6}, e:{r:dr,c:10}});
+    dr++;
+  });
+
+  // Rellenar vacíos hasta MIN_ROWS
+  while (dr - dataStart < MIN_ROWS) {
+    const fill = (dr % 2 === 0) ? 'DEEAF1' : 'FFFFFF';
+    for (let c = 0; c < 6; c++) setCell(dr, c, '', fDAT, AC, bIN, fill);
+    setCell(dr, 6, '', fDAT, AL, bIN, fill);
+    merges.push({s:{r:dr,c:6}, e:{r:dr,c:10}});
+    dr++;
+  }
+
+  // ── PIE ─────────────────────────────────────────────────────────────
+  setCell(dr, 0, 'NOTA: Rellenar sólo la casilla de grupo de origen/destino si hay cambios entre grupos.', fNOT, AL);
+  merges.push({s:{r:dr,c:0}, e:{r:dr,c:10}}); dr++;
+  dr++; // línea vacía
+  setCell(dr, 1, 'T8 Ingeniería Industrial - PF8', fPIE, AC);
+  merges.push({s:{r:dr,c:1}, e:{r:dr,c:10}}); dr++;
+  setCell(dr, 0, 'Pág. 1', fPIE, AC);
+  setCell(dr, 1, fecha, fDAT, AC);
+  merges.push({s:{r:dr,c:1}, e:{r:dr,c:10}});
+
+  // ── RANGO Y CONFIGURACIÓN ──────────────────────────────────────────
+  ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:dr,c:10}});
+  ws['!merges'] = merges;
+  ws['!cols'] = [
+    {wch:13},{wch:13},{wch:12},{wch:11},{wch:14},{wch:4},
+    {wch:45},{wch:4},{wch:4},{wch:4},{wch:4}
+  ];
+  ws['!rows'] = [
+    {hpt:6},  // 1
+    {hpt:28}, // 2 título
+    {hpt:6},  // 3
+    {hpt:20}, // 4 subtítulo
+    {hpt:18}, // 5 cabecera nivel 1
+    {hpt:18}, // 6 cabecera nivel 2
+    {hpt:18}, // 7 cabecera nivel 2 cont
+    ...Array(MIN_ROWS).fill({hpt:18}),
+    {hpt:12},{hpt:6},{hpt:14},{hpt:14}
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'BORRADOR');
+  XLSX.writeFile(wb, `VariacionCargas_${dd}-${mm}-${yyyy}.xlsx`, {cellStyles:true, bookSST:false});
+  showToast('⬇ Excel variaciones generado');
+}
+
+
+
+
+// ── FILTRO EQUIPO ─────────────────────────────────────────────────────
+let currentEqFilter = null;
+
+function getEqFromNum(num) {
+  const n = parseInt(num);
+  if (n >= 2000 && n <= 2113) return '13';
+  if (n >= 2114 && n <= 2219) return '15';
+  if (n >= 2220 && n <= 2279) return '16';
+  if (n >= 2280 && n <= 2499) return '17';
+  return 'otros';
+}
+
+function filtrarEq(eq) {
+  currentEqFilter = eq;
+  document.querySelectorAll('.eq-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.eq === eq)
+  );
+  document.querySelectorAll('.carga-opt').forEach(div => {
+    div.style.display = getEqFromNum(div.dataset.num) === eq ? '' : 'none';
+  });
+  if (selectedDest && getEqFromNum(selectedDest) !== eq) {
+    selectedDest = null;
+    document.querySelectorAll('.carga-opt').forEach(d => d.classList.remove('selected'));
+  }
+}
+
+
+// ── COLOR FONDO PLANTA ────────────────────────────────────────────────
+function setPlantBg(c1, c2) {
+  document.documentElement.style.setProperty('--plant-bg1', c1);
+  document.documentElement.style.setProperty('--plant-bg2', c2);
+  localStorage.setItem('ml2_plant_bg', JSON.stringify({c1, c2}));
+}
+
+function setCargaBg(color) {
+  document.documentElement.style.setProperty('--carga-bg', color);
+  localStorage.setItem('ml2_carga_bg', color);
+  // Aplicar también al panel si está abierto
+  const view = document.getElementById('view-carga');
+  if (view) view.style.background = color;
+}
+
+function loadCargaBg() {
+  try {
+    const saved = localStorage.getItem('ml2_carga_bg');
+    if (!saved) return;
+    document.documentElement.style.setProperty('--carga-bg', saved);
+    const inp = document.getElementById('carga-color-inp');
+    if (inp) inp.value = saved;
+  } catch(e) {}
+}
+
+function loadPlantBg() {
+  try {
+    const saved = localStorage.getItem('ml2_plant_bg');
+    if (!saved) return;
+    const {c1, c2} = JSON.parse(saved);
+    document.documentElement.style.setProperty('--plant-bg1', c1);
+    document.documentElement.style.setProperty('--plant-bg2', c2);
+    const i1 = document.getElementById('plant-color-1');
+    const i2 = document.getElementById('plant-color-2');
+    if (i1) i1.value = c1;
+    if (i2) i2.value = c2;
+  } catch(e) {}
+}
+
+
+// ── PDF AL SERVIDOR ───────────────────────────────────────────────────
+const SERVIDOR_URL = 'http://localhost:5000';
+
+async function verificarServidor() {
+  try {
+    const r = await fetch(SERVIDOR_URL + '/health', {signal: AbortSignal.timeout(1500)});
+    const data = await r.json();
+    const el = document.getElementById('server-status');
+    if (el) {
+      el.className = 'server-status ' + (data.ok ? 'online' : 'offline');
+      el.title = data.ok ? 'Servidor activo' : 'Servidor inactivo';
+    }
+    return data.ok;
+  } catch(e) {
+    const el = document.getElementById('server-status');
+    if (el) { el.className = 'server-status offline'; el.title = 'Servidor no disponible — ejecuta INICIAR_SERVIDOR.bat'; }
+    return false;
+  }
+}
+
+async function subirPDF(file) {
+  if (!file || !file.name.toLowerCase().endsWith('.pdf')) return;
+
+  const ok = await verificarServidor();
+  if (!ok) {
+    showToast('⚠ Servidor no activo — ejecuta INICIAR_SERVIDOR.bat');
+    return;
+  }
+
+  showToast('⏳ Procesando PDF...');
+
+  const form = new FormData();
+  form.append('pdf', file);
+
+  try {
+    const r = await fetch(SERVIDOR_URL + '/procesar-pdf', {method:'POST', body:form});
+    const data = await r.json();
+
+    if (!data.ok) {
+      showToast('❌ Error: ' + (data.error || 'desconocido'));
+      return;
+    }
+
+    // Actualizar CARGAS con los datos recibidos
+    CARGAS.length = 0;
+    data.cargas.forEach(c => CARGAS.push(c));
+    Object.keys(cargaMap).forEach(k => delete cargaMap[k]);
+    CARGAS.forEach(c => cargaMap[c.num] = c);
+
+    document.getElementById('hdr-cargas').textContent = CARGAS.length;
+    buildPlant();
+    updatePlantSat();
+    autoguardar();
+    showToast(`✓ ${data.nuevas} cargas procesadas del PDF (${data.total} total)`);
+
+  } catch(e) {
+    showToast('❌ Error al procesar: ' + e.message);
+  }
+}
+
+// Drag & drop en la zona PDF
+document.addEventListener('DOMContentLoaded', () => {
+  const zone = document.getElementById('pdf-drop-zone');
+  if (!zone) return;
+
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) subirPDF(file);
+  });
+
+  // Verificar estado del servidor cada 10 segundos
+  verificarServidor();
+  setInterval(verificarServidor, 10000);
+});
+
+
+
+// ── MARCAR OPERACIÓN COMO ERROR ──────────────────────────────────────
+const ERROR_OPS = {}; // { carga_num: Set([pr1, pr2...]) }
+
+function loadErrorOps() {
+  try {
+    const raw = localStorage.getItem('ML2_ERROR_OPS_' + ESCENARIO_ACTIVO);
+    if (raw) {
+      const data = JSON.parse(raw);
+      Object.keys(data).forEach(k => { ERROR_OPS[k] = new Set(data[k]); });
+    }
+  } catch(e) {}
+}
+
+function saveErrorOps() {
+  const data = {};
+  Object.keys(ERROR_OPS).forEach(k => { data[k] = Array.from(ERROR_OPS[k]); });
+  localStorage.setItem('ML2_ERROR_OPS_' + ESCENARIO_ACTIVO, JSON.stringify(data));
+}
+
+function toggleErrorOp(carga_num, pr, tr) {
+  if (!ERROR_OPS[carga_num]) ERROR_OPS[carga_num] = new Set();
+  if (ERROR_OPS[carga_num].has(pr)) {
+    ERROR_OPS[carga_num].delete(pr);
+    tr.classList.remove('op-error');
+    showToast('Marcado eliminado');
+  } else {
+    ERROR_OPS[carga_num].add(pr);
+    tr.classList.add('op-error');
+    showToast('⚠ Operación marcada como posible error');
+  }
+  saveErrorOps();
+  // Actualizar color del punto
+  const dot = tr.querySelector('.error-dot');
+  if (dot) dot.classList.toggle('active', ERROR_OPS[carga_num].has(pr));
+}
+
+function isErrorOp(carga_num, pr) {
+  return ERROR_OPS[carga_num] && ERROR_OPS[carga_num].has(pr);
+}
+
+
+
+function eliminarCarga(num) {
+  if (!num) return;
+  const c = cargaMap[num];
+  if (!c) return;
+  if (!confirm(`¿Eliminar carga ${num} — ${c.nombre}?`)) return;
+
+  const idx = CARGAS.findIndex(c => c.num === num);
+  if (idx >= 0) CARGAS.splice(idx, 1);
+  delete cargaMap[num];
+
+  document.getElementById('hdr-cargas').textContent = CARGAS.length;
+  showView('plant');
+  buildPlant();
+  updatePlantSat();
+  autoguardar();
+  showToast(`🗑 Carga ${num} eliminada`);
+}
+
+
+// ── EXCEL 2 — COMPARACIÓN ────────────────────────────────────────────
+// Mapa: pr → {carga, nombre, desc, tiempo}
+const EXCEL2_OPS = {}; // pr → info
+let EXCEL2_LOADED = false;
+
+function loadExcel2(input) {
+  const f = input.files[0];
+  if (!f) return;
+  input.value = '';
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+      Object.keys(EXCEL2_OPS).forEach(k => delete EXCEL2_OPS[k]);
+
+      wb.SheetNames.forEach(sn => {
+        if (sn.includes('✎')) return;
+        const ws   = wb.Sheets[sn];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+        if (rows.length < 3) return;
+
+        const titulo = rows[0]?.[0] ? String(rows[0][0]) : sn;
+        const mNum   = titulo.match(/\b(\d{4})\b/) || sn.match(/^(\d{4})/);
+        const num    = mNum ? mNum[1] : sn.split(' ')[0];
+        const nombre = titulo.replace(/CARGA\s*\d+\s*[—-]\s*/i,'').trim() || sn.replace(/^\d+\s*/,'').trim();
+
+        // Leer tacto de celda C1 (puede estar en distintas posiciones)
+        let tacto = null;
+        const row0 = rows[0] || [];
+        for (let ci = 0; ci < row0.length; ci++) {
+          try {
+            if (!row0[ci]) continue;
+            const mT = String(row0[ci]).match(/Tpo[.\s]Tacto[:\s]+([\d,.]+)/i);
+            if (mT) { tacto = parseFloat(mT[1].replace(',','.')); break; }
+          } catch(te) {}
+        }
+
+        for (let ri = 2; ri < rows.length; ri++) {
+          const row = rows[ri];
+          if (!row?.[0]) continue;
+          const pr = String(row[0]).trim();
+          if (!pr || pr === 'TOTAL' || pr === 'Total') continue;
+          const desc   = String(row[1] || '').trim();
+          const tiempo = row[2] !== null && row[2] !== undefined ? parseFloat(row[2]) : null;
+          EXCEL2_OPS[pr] = {carga: num, nombre, desc, tiempo};
+        }
+      });
+
+      EXCEL2_LOADED = true;
+      const btn = document.getElementById('excel2-load-btn');
+      if (btn) { btn.classList.add('active'); btn.style.background = 'rgba(255,209,102,0.3)'; }
+
+      const nOps = Object.keys(EXCEL2_OPS).length;
+      console.log('Excel2 cargado:', nOps, 'ops', Object.keys(EXCEL2_OPS).slice(0,5));
+
+      // Recalcular marcas si hay una carga abierta
+      if (currentCarga) openCarga(currentCarga);
+      showToast(`✓ Excel 2 cargado — ${nOps} operaciones indexadas`);
+    } catch(err) {
+      showToast('⚠ Error al cargar Excel 2: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(f);
+}
+
+function mostrarInfoExcel2(pr) {
+  const info = EXCEL2_OPS[pr];
+  if (!info) return;
+  document.getElementById('excel2-pr').textContent    = pr;
+  document.getElementById('excel2-desc').textContent  = info.desc || '—';
+  document.getElementById('excel2-carga').textContent = `${info.carga} — ${info.nombre}`;
+  document.getElementById('excel2-tiempo').textContent = info.tiempo !== null ? info.tiempo.toFixed(3) + ' min' : '—';
+  document.getElementById('modal-excel2').classList.add('open');
+}
+
+function limpiarExcel2() {
+  Object.keys(EXCEL2_OPS).forEach(k => delete EXCEL2_OPS[k]);
+  EXCEL2_LOADED = false;
+  const btn = document.getElementById('excel2-load-btn');
+  if (btn) btn.classList.remove('active');
+  if (currentCarga) openCarga(currentCarga);
+  showToast('Excel 2 eliminado');
+}
+
+
+// ── SUBIR PDF AL SERVIDOR ─────────────────────────────────────────────
+const SERVIDOR = 'https://web-production-cf4f0.up.railway.app';
+let _srvOnline = false;
+
+async function checkServidor() {
+  try {
+    const r = await fetch(SERVIDOR + '/health', {signal: AbortSignal.timeout(1500)});
+    const d = await r.json();
+    _srvOnline = d.ok;
+  } catch(e) { _srvOnline = false; }
+  const dot = document.getElementById('srv-dot');
+  if (dot) { dot.className = 'srv-dot ' + (_srvOnline ? 'on' : 'off'); dot.title = _srvOnline ? 'Servidor activo' : 'Servidor inactivo — ejecuta INICIAR_SERVIDOR.bat'; }
+}
+
+async function subirPDF(file) {
+  if (!file || !file.name.toLowerCase().endsWith('.pdf')) return;
+  await checkServidor();
+  if (!_srvOnline) {
+    showToast('⚠ Servidor no activo — ejecuta INICIAR_SERVIDOR.bat');
+    return;
+  }
+  showToast('⏳ Procesando PDF...');
+  const form = new FormData();
+  form.append('pdf', file);
+  try {
+    const r = await fetch(SERVIDOR + '/procesar-pdf', {method:'POST', body:form});
+    const d = await r.json();
+    if (!d.ok) { showToast('❌ ' + (d.error||'Error')); return; }
+
+    // Cambiar escenario si hace falta
+    if (d.escenario && d.escenario !== ESCENARIO_ACTIVO) {
+      document.getElementById('esc-a-btn').classList.toggle('active', d.escenario==='A');
+      document.getElementById('esc-b-btn').classList.toggle('active', d.escenario==='B');
+      ESCENARIO_ACTIVO = d.escenario;
+      localStorage.setItem('ml2_escenario', d.escenario);
+      CONFIG.tacto = d.escenario==='A' ? 1.090 : 2.140;
+    }
+
+    // Reemplazar cargas
+    CARGAS.length = 0;
+    Object.keys(cargaMap).forEach(k => delete cargaMap[k]);
+    d.cargas.forEach(c => { CARGAS.push(c); cargaMap[c.num]=c; });
+    CARGAS.sort((a,b) => parseInt(a.num)-parseInt(b.num));
+
+    // Guardar
+    if (ESCENARIO_ACTIVO==='B') {
+      CARGAS_STORE.B = JSON.parse(JSON.stringify(CARGAS));
+      localStorage.setItem('ML2_CARGAS_B', JSON.stringify(CARGAS_STORE.B));
+    } else {
+      CARGAS_STORE.A = JSON.parse(JSON.stringify(CARGAS));
+      localStorage.setItem('ML2_CARGAS_A', JSON.stringify(CARGAS_STORE.A));
+    }
+
+    buildPlant(); updatePlantSat();
+    document.getElementById('hdr-cargas').textContent = CARGAS.length;
+    autoguardar();
+    showToast(`✓ ${d.total} cargas cargadas del PDF → Escenario ${ESCENARIO_ACTIVO}`);
+  } catch(e) {
+    showToast('❌ Error: ' + e.message);
+  }
+}
+
+// Drag & drop en el botón PDF
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('pdf-upload-btn');
+  if (btn) {
+    btn.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); btn.classList.add('drag-over'); });
+    btn.addEventListener('dragleave', e => { e.stopPropagation(); btn.classList.remove('drag-over'); });
+    btn.addEventListener('drop', e => {
+      e.preventDefault(); e.stopPropagation(); btn.classList.remove('drag-over');
+      const f = e.dataTransfer.files[0];
+      if (f) subirPDF(f);
+    });
+  }
+  // También permitir arrastrar a cualquier parte de la página
+  document.addEventListener('dragover', e => {
+    if (e.dataTransfer.types.includes('Files') && !_draggingRow && !_draggingCol) {
+      e.preventDefault();
+    }
+  });
+  document.addEventListener('drop', e => {
+    if (_draggingRow || _draggingCol) return;
+    const f = e.dataTransfer.files[0];
+    if (f && f.name.toLowerCase().endsWith('.pdf')) {
+      e.preventDefault();
+      subirPDF(f);
+    }
+  });
+  // Verificar servidor cada 10s
+  checkServidor();
+  setInterval(checkServidor, 10000);
+});
+
+// ── NUEVA OPERACIÓN ───────────────────────────────────────────────────
+function openNewOp() {
+  document.getElementById('nop-pr').value = '';
+  document.getElementById('nop-desc').value = '';
+  document.getElementById('nop-tiempo').value = '';
+  document.getElementById('modal-new-op').classList.add('open');
+  setTimeout(() => document.getElementById('nop-pr').focus(), 100);
+}
+
+function closeNewOp() {
+  document.getElementById('modal-new-op').classList.remove('open');
+}
+
+function confirmarNuevaOp() {
+  const pr    = document.getElementById('nop-pr').value.trim();
+  const desc  = document.getElementById('nop-desc').value.trim();
+  const tStr  = document.getElementById('nop-tiempo').value.trim();
+  const todos = tStr ? parseFloat(tStr) : null;
+
+  if (!pr)   { showToast('⚠ Introduce el nº de operación'); return; }
+  if (!desc) { showToast('⚠ Introduce la descripción'); return; }
+
+  const c = cargaMap[currentCarga];
+  if (!c) return;
+
+  // Verificar que no existe ya
+  if (c.ops.some(op => op.pr === pr)) {
+    showToast('⚠ Ya existe una operación con ese PR'); return;
+  }
+
+  // Crear nueva op con todas las columnas a null excepto TODOS
+  const COLS_FIJAS_GLOBAL = ['5FF','5FN'];
+  const allCols = new Set([...COLS_FIJAS_GLOBAL, ...(c.cols || [])]);
+  const newOp = { pr, desc, TODOS: todos };
+  allCols.forEach(col => {
+    if (col !== 'TODOS') newOp[col] = null;
+  });
+  // Asegurar que las columnas fijas están en c.cols
+  COLS_FIJAS_GLOBAL.forEach(cf => {
+    if (!c.cols.includes(cf)) {
+      c.cols.splice(c.cols.indexOf('TODOS'), 0, cf);
+      c.totales[cf] = 0;
+    }
+  });
+
+  c.ops.push(newOp);
+  c.n_ops = c.ops.length;
+
+  // Recalcular TODOS
+  if (todos) {
+    c.totales['TODOS'] = Math.round(
+      c.ops.reduce((s, o) => s + (parseFloat(o['TODOS']) || 0), 0) * 1000
+    ) / 1000;
+  }
+
+  closeNewOp();
+  openCarga(currentCarga);
+  autoguardar();
+  showToast(`✓ Operación ${pr} añadida`);
+}
+
+
+// ── DRAG & DROP FILAS ─────────────────────────────────────────────────
+let dragSrcRow = null;
+let dragSrcIdx = -1;
+
+function initRowDrag(tbody, c) {
+  const rows = Array.from(tbody.querySelectorAll('tr.op-row'));
+
+  rows.forEach((row, i) => {
+    // Solo arrastrar desde el handle
+    const handle = row.querySelector('.drag-handle');
+    if (handle) {
+      handle.addEventListener('mousedown', () => { row.draggable = true; });
+      handle.addEventListener('mouseup',   () => { row.draggable = false; });
+    }
+    row.draggable = false;
+
+    row.addEventListener('dragstart', e => {
+      if (!row.draggable) { e.preventDefault(); return; }
+      dragSrcRow = row;
+      dragSrcIdx = i;
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      _draggingRow = true;
+    });
+
+    row.addEventListener('dragend', () => {
+      row.classList.remove('dragging');
+      tbody.querySelectorAll('tr.op-row').forEach(r => {
+        r.classList.remove('drag-over-top', 'drag-over-bot');
+      });
+      dragSrcRow = null;
+      _draggingRow = false;
+      document.getElementById('drop-overlay').classList.remove('active');
+    });
+
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!dragSrcRow || dragSrcRow === row) return;
+      tbody.querySelectorAll('tr.op-row').forEach(r => {
+        r.classList.remove('drag-over-top', 'drag-over-bot');
+      });
+      const rect = row.getBoundingClientRect();
+      const mid  = rect.top + rect.height / 2;
+      row.classList.add(e.clientY < mid ? 'drag-over-top' : 'drag-over-bot');
+    });
+
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!dragSrcRow || dragSrcRow === row) return;
+
+      const rect = row.getBoundingClientRect();
+      const mid  = rect.top + rect.height / 2;
+      const after = e.clientY >= mid;
+
+      // Reordenar en c.ops
+      const ops = c.ops;
+      const srcI = ops.findIndex(o => o.pr === dragSrcRow.dataset.pr);
+      const dstI = ops.findIndex(o => o.pr === row.dataset.pr);
+      if (srcI === -1 || dstI === -1) return;
+
+      const [moved] = ops.splice(srcI, 1);
+      const newDst  = ops.findIndex(o => o.pr === row.dataset.pr);
+      ops.splice(after ? newDst + 1 : newDst, 0, moved);
+
+      autoguardar();
+      openCarga(currentCarga);
+    });
+  });
+}
+
+
+// ── EXPORTAR HTML CON DATOS ACTUALES ─────────────────────────────────
+function exportarHTML() {
+  // Leer el HTML actual del archivo (vía fetch al mismo archivo)
+  fetch(location.href)
+    .then(r => r.text())
+    .then(htmlOriginal => {
+      // Sustituir CARGAS con los datos actuales del localStorage
+      const compact = JSON.stringify(CARGAS, null, 0);
+      let htmlExport = htmlOriginal.replace(
+        /const CARGAS = \[.*?\];/s,
+        'const CARGAS = ' + compact + ';'
+      );
+
+      // Sustituir PENDING_OPS
+      const pendingCompact = JSON.stringify(PENDING_OPS);
+      htmlExport = htmlExport.replace(
+        /const PENDING_OPS = \{.*?\};/s,
+        'const PENDING_OPS = ' + pendingCompact + ';'
+      );
+
+      // Sustituir MIX_DATA
+      const mixCompact = JSON.stringify(MIX_DATA);
+      htmlExport = htmlExport.replace(
+        /const MIX_DATA = \{\};/,
+        'const MIX_DATA = ' + mixCompact + ';'
+      );
+
+      // Descargar
+      const blob = new Blob([htmlExport], {type: 'text/html;charset=utf-8'});
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      const fecha = new Date().toLocaleDateString('es-ES').replace(/\//g,'-');
+      a.download = `dashboard_ML2_${fecha}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('⬇ HTML exportado con datos actuales');
+    })
+    .catch(() => {
+      // Si fetch falla (archivo local), usar método alternativo
+      const htmlActual = document.documentElement.outerHTML;
+      const blob = new Blob([htmlActual], {type: 'text/html;charset=utf-8'});
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      const fecha = new Date().toLocaleDateString('es-ES').replace(/\//g,'-');
+      a.download = `dashboard_ML2_${fecha}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('⬇ HTML exportado');
+    });
+}
+
+
+function mostrarDescCompleta(pr, desc) {
+  document.getElementById('modal-desc-pr').textContent = pr;
+  document.getElementById('modal-desc-text').textContent = desc;
+  document.getElementById('modal-desc').classList.add('open');
+}
+
+
+// ── ESCENARIOS ────────────────────────────────────────────────────────
+const ESCENARIOS = {
+  A: { label: '3T × 1.09', tacto: 1.09, turnos: 3, info: 'Tacto activo: 1.09 min (3 turnos)' },
+  B: { label: '2T × 1.09 + 1T × 2.40', tacto_normal: 1.09, tacto_medio: 2.40,
+       turnos_normal: 2, turnos_medio: 1,
+       info: 'Tacto: 1.09 min (2T) + 2.40 min (1T medio)' },
+};
+let ESCENARIO_ACTIVO = localStorage.getItem('ml2_escenario') || 'A';
+
+// Almacén separado de cargas por escenario
+const CARGAS_STORE = { A: null, B: [] };
+
+function setEscenario(esc) {
+
+  // Guardar cargas Y config del escenario actual antes de cambiar
+  const configActual = JSON.parse(JSON.stringify(CONFIG));
+  if (ESCENARIO_ACTIVO === 'A') {
+    CARGAS_STORE.A = JSON.parse(JSON.stringify(CARGAS));
+    localStorage.setItem('ML2_CONFIG_A', JSON.stringify(configActual));
+  } else {
+    CARGAS_STORE.B = JSON.parse(JSON.stringify(CARGAS));
+    localStorage.setItem('ML2_CONFIG_B', JSON.stringify(configActual));
+  }
+
+  ESCENARIO_ACTIVO = esc;
+  localStorage.setItem('ml2_escenario', esc);
+
+  // Actualizar botones
+  document.getElementById('esc-a-btn').classList.toggle('active', esc === 'A');
+  document.getElementById('esc-b-btn').classList.toggle('active', esc === 'B');
+
+  // Cargar cargas del nuevo escenario
+  const cargasEsc = esc === 'A'
+    ? (CARGAS_STORE.A || JSON.parse(localStorage.getItem('ML2_CARGAS_A') || '[]'))
+    : (CARGAS_STORE.B.length ? CARGAS_STORE.B : JSON.parse(localStorage.getItem('ML2_CARGAS_B') || '[]'));
+
+  CARGAS.length = 0;
+  cargasEsc.forEach(c => CARGAS.push(c));
+  Object.keys(cargaMap).forEach(k => delete cargaMap[k]);
+  CARGAS.forEach(c => cargaMap[c.num] = c);
+
+  document.getElementById('hdr-cargas').textContent = CARGAS.length;
+
+  // Guardar en localStorage por escenario
+  if (esc === 'A' && CARGAS_STORE.A) {
+    localStorage.setItem('ML2_CARGAS_A', JSON.stringify(CARGAS_STORE.A));
+  }
+
+  // Limpiar PENDING_OPS y cargar los del nuevo escenario
+  Object.keys(PENDING_OPS).forEach(k => delete PENDING_OPS[k]);
+  Object.keys(MIX_DATA).forEach(k => delete MIX_DATA[k]);
+  Object.keys(ERROR_OPS).forEach(k => delete ERROR_OPS[k]);
+
+  // Cargar estado del nuevo escenario
+  const estadoEsc = localStorage.getItem(STORAGE_KEY_BASE + '_' + esc);
+  if (estadoEsc) {
+    try {
+      const est = JSON.parse(estadoEsc);
+      if (est.pendingOps) Object.assign(PENDING_OPS, est.pendingOps);
+      if (est.mixData)    Object.assign(MIX_DATA, est.mixData);
+    } catch(e) {}
+  }
+
+  // Cargar error ops del nuevo escenario
+  const errRaw = localStorage.getItem('ML2_ERROR_OPS_' + esc);
+  if (errRaw) {
+    try {
+      const data = JSON.parse(errRaw);
+      Object.keys(data).forEach(k => { ERROR_OPS[k] = new Set(data[k]); });
+    } catch(e) {}
+  }
+
+  // Restaurar CONFIG del nuevo escenario
+  const configKey = esc === 'A' ? 'ML2_CONFIG_A' : 'ML2_CONFIG_B';
+  const savedConfig = localStorage.getItem(configKey);
+  if (savedConfig) {
+    const cfg = JSON.parse(savedConfig);
+    Object.assign(CONFIG, cfg);
+  } else {
+    // Config por defecto según escenario
+    if (esc === 'B') {
+      CONFIG.tacto = 2.140;
+    } else {
+      CONFIG.tacto = 1.090;
+    }
+  }
+  // Actualizar tacto visible en header
+  const tactoEl = document.getElementById('hdr-tacto');
+  if (tactoEl) tactoEl.textContent = CONFIG.tacto.toFixed(3).replace('.',',');
+
+  buildPlant();
+  updatePlantSat();
+
+  // Cerrar vista de carga si estaba abierta
+  showView('plant');
+
+  showToast(`Escenario ${esc} — ${CARGAS.length ? CARGAS.length + ' cargas' : 'sin cargas — carga el Excel'}`);
+}
+
+function loadEscenario() {
+  const esc = localStorage.getItem('ml2_escenario') || 'A';
+
+  // Guardar cargas actuales como escenario A
+  if (CARGAS.length && !CARGAS_STORE.A) {
+    CARGAS_STORE.A = JSON.parse(JSON.stringify(CARGAS));
+    localStorage.setItem('ML2_CARGAS_A', JSON.stringify(CARGAS_STORE.A));
+  }
+
+  ESCENARIO_ACTIVO = esc;
+  document.getElementById('esc-a-btn').classList.toggle('active', esc === 'A');
+  document.getElementById('esc-b-btn').classList.toggle('active', esc === 'B');
+
+  if (esc === 'B') {
+    const cargasB = JSON.parse(localStorage.getItem('ML2_CARGAS_B') || '[]');
+    CARGAS.length = 0;
+    cargasB.forEach(c => CARGAS.push(c));
+    Object.keys(cargaMap).forEach(k => delete cargaMap[k]);
+    CARGAS.forEach(c => cargaMap[c.num] = c);
+    document.getElementById('hdr-cargas').textContent = CARGAS.length;
+  }
+}
+
+function getTactoParaCarga(cargaNum) {
+  // En escenario B, las cargas del medio turno (marcadas) usan tacto 2.40
+  if (ESCENARIO_ACTIVO === 'B') {
+    const c = cargaMap[cargaNum];
+    if (c && c.medio_turno) return ESCENARIOS.B.tacto_medio;
+    return ESCENARIOS.B.tacto_normal;
+  }
+  return CONFIG.tacto;
+}
+
+function loadEscenario() {
+  const esc = localStorage.getItem('ml2_escenario') || 'A';
+  setEscenario(esc);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────
+  loadErrorOps();
+loadTheme();
+loadPlantBg();
+// Cargar umbrales guardados
+try {
+  const savedSat = localStorage.getItem('ml2_sat_config');
+  if (savedSat) {
+    const s = JSON.parse(savedSat);
+    SAT_CONFIG.objetivo = s.objetivo || 90;
+    SAT_CONFIG.aviso    = s.aviso    || 80;
+    SAT_CONFIG.exceso   = s.exceso   || 100;
+  }
+} catch(e) {}
+document.getElementById('hdr-cargas').textContent = CARGAS.length;
+// Intentar cargar estado guardado
+const restaurado = cargarEstado();
+buildPlant();
+updatePlantSat();
+if (restaurado) {
+  showToast('✓ Datos restaurados');
+}
+</script>
+
+<!-- MODAL CAMBIAR UBICACIÓN -->
+<div class="modal-overlay" id="modal-ubicacion">
+  <div class="modal" style="width:360px">
+    <h3>📍 CAMBIAR UBICACIÓN</h3>
+    <div style="font-size:11px;color:var(--gray);margin-bottom:14px">
+      Carga: <span id="ub-carga-num" style="color:var(--accent)"></span>
+    </div>
+
+    <div class="modal-label">TACTO ACTUAL</div>
+    <div style="margin-bottom:12px">
+      <span class="ubicacion-current" id="ub-tacto-actual">—</span>
+      <span style="font-size:10px;color:var(--gray);margin-left:8px" id="ub-lado-actual"></span>
+    </div>
+
+    <div class="modal-label">NUEVO TACTO</div>
+    <select class="ubicacion-select" id="ub-nuevo-tacto" style="margin-bottom:12px">
+      <option value="">Selecciona tacto...</option>
+    </select>
+
+    <div class="modal-label">LADO</div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px">
+        <input type="radio" name="ub-lado" value="izq" style="accent-color:var(--accent)">
+        <span style="color:#00b4d8">◀ IZQUIERDO</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px">
+        <input type="radio" name="ub-lado" value="der" checked style="accent-color:var(--orange)">
+        <span style="color:#f4a261">DERECHO ▶</span>
+      </label>
+    </div>
+
+    <div class="modal-label" style="margin-top:4px">OPERARIOS</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <input type="number" id="ub-operarios" min="0.5" max="10" step="0.5"
+             style="width:80px;background:var(--bg3);border:1px solid var(--border);
+                    border-radius:4px;color:var(--white);font-family:'Share Tech Mono';
+                    font-size:14px;padding:5px 8px;text-align:center"
+             placeholder="1.0">
+      <span style="font-size:10px;color:var(--gray)">operarios en este tacto</span>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeUbicacion()">CANCELAR</button>
+      <button class="btn btn-primary" onclick="confirmarUbicacion()">APLICAR</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL EDITAR COLUMNAS -->
+<div class="modal-cols" id="modal-cols">
+  <div class="modal-cols-box">
+    <h3>✏ EDITAR MODELOS</h3>
+    <div style="font-size:11px;color:var(--gray);margin-bottom:12px">
+      Carga: <span id="mc-carga-num" style="color:var(--accent)"></span>
+    </div>
+    <div id="mc-cols-list"></div>
+    <div class="col-add-row">
+      <input class="col-add-input" id="mc-new-col" placeholder="Nombre nuevo modelo..." maxlength="20">
+      <button class="btn-add-col" onclick="addColFromModal()">+ AÑADIR</button>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn" onclick="closeColsModal()">CANCELAR</button>
+      <button class="btn btn-primary" onclick="applyColsModal()">APLICAR</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL NUEVA CARGA -->
+<div class="modal-new-carga" id="modal-new-carga">
+  <div class="modal-new-carga-box">
+    <h3>+ NUEVA CARGA</h3>
+    <div class="new-carga-field">
+      <label class="new-carga-label">NÚMERO DE CARGA</label>
+      <input class="new-carga-input" id="nc-num" type="text" placeholder="ej. 2310" maxlength="6">
+    </div>
+    <div class="new-carga-field">
+      <label class="new-carga-label">NOMBRE</label>
+      <input class="new-carga-input" id="nc-nombre" type="text" placeholder="ej. Montaje lateral" maxlength="35">
+    </div>
+    <div class="new-carga-field">
+      <label class="new-carga-label">TACTO</label>
+      <input class="new-carga-input" id="nc-tacto" type="text" placeholder="ej. L230" maxlength="5">
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+      <div style="flex:1">
+        <label class="new-carga-label">LADO</label>
+        <select class="new-carga-input" id="nc-lado" style="cursor:pointer">
+          <option value="izq">IZQ</option>
+          <option value="der">DER</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+      <button class="btn" onclick="closeNewCarga()">CANCELAR</button>
+      <button class="btn btn-primary" onclick="crearNuevaCarga()">CREAR</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL NUEVA OPERACIÓN -->
+<div class="modal-new-op" id="modal-new-op">
+  <div class="modal-new-op-box">
+    <h3>+ NUEVA OPERACIÓN</h3>
+    <div class="new-carga-field">
+      <label class="new-carga-label">Nº OPERACIÓN (PR)</label>
+      <input class="new-carga-input" id="nop-pr" type="text" placeholder="ej. 1234567" maxlength="15">
+    </div>
+    <div class="new-carga-field">
+      <label class="new-carga-label">DESCRIPCIÓN</label>
+      <input class="new-carga-input" id="nop-desc" type="text" placeholder="Descripción del desarrollo de trabajo" maxlength="80">
+    </div>
+    <div class="new-carga-field">
+      <label class="new-carga-label">TIEMPO TODOS (min)</label>
+      <input class="new-carga-input" id="nop-tiempo" type="number" step="0.001" min="0" placeholder="0.000">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn" onclick="closeNewOp()">CANCELAR</button>
+      <button class="btn btn-primary" onclick="confirmarNuevaOp()">+ AÑADIR</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL DESCRIPCIÓN COMPLETA -->
+<div class="modal-new-carga" id="modal-desc" style="z-index:200">
+  <div class="modal-new-carga-box" style="max-width:500px">
+    <div style="font-size:9px;color:var(--gray);letter-spacing:2px;margin-bottom:6px" id="modal-desc-pr"></div>
+    <div style="font-size:13px;color:var(--white);line-height:1.6" id="modal-desc-text"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px">
+      <button class="btn" onclick="document.getElementById('modal-desc').classList.remove('open')">CERRAR</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL EXCEL 2 INFO -->
+<div class="modal-excel2" id="modal-excel2">
+  <div class="modal-excel2-box">
+    <h3>⚠ OPERACIÓN SOLO EN EXCEL 2</h3>
+    <div class="excel2-info-row">
+      <span class="excel2-info-label">Nº Operación</span>
+      <span class="excel2-info-val" id="excel2-pr"></span>
+    </div>
+    <div class="excel2-info-row">
+      <span class="excel2-info-label">Descripción</span>
+      <span class="excel2-info-val" id="excel2-desc"></span>
+    </div>
+    <div class="excel2-info-row">
+      <span class="excel2-info-label">Carga origen</span>
+      <span class="excel2-info-val" id="excel2-carga"></span>
+    </div>
+    <div class="excel2-info-row">
+      <span class="excel2-info-label">Tiempo TODOS</span>
+      <span class="excel2-info-val" id="excel2-tiempo"></span>
+    </div>
+    <div style="margin-top:6px;padding:8px;background:rgba(255,209,102,0.08);border-radius:4px;font-size:10px;color:var(--yellow)">
+      Esta operación está en el Excel 2 pero <strong>no en el Excel 1</strong> (cargado en el dashboard).
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn" onclick="document.getElementById('modal-excel2').classList.remove('open')">CERRAR</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
